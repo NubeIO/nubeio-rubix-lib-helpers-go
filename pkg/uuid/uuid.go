@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-// MakeUUID UUID newUUID generates a random UUID
+
 func MakeUUID() (string, error) {
 	uuid := make([]byte, 16)
 	n, err := io.ReadFull(rand.Reader, uuid)
