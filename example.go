@@ -27,11 +27,11 @@ func main() {
 	fmt.Println(u)
 
 	fmt.Println("Testing Temperature Lookup Tables")
-	result, err := thermistor.ResistanceToTemperature(1000, thermistor.T2_10K_TempTable)
-	fmt.Println("1000 Ohm from T2_10K = ", result)
-	result, err = thermistor.ResistanceToTemperature(1000, thermistor.T3_10K_TempTable)
-	fmt.Println("1000 Ohm from T3_10K = ", result)
-	result, err = thermistor.ResistanceToTemperature(87, thermistor.D_PT100_TempTable)
-	fmt.Println("87 Ohm from D_PT100 = ", result)
+	result, err := thermistor.ResistanceToTemperature(1000, thermistor.T210K)
+	fmt.Println("1000 Ohm from T2_10K Thermistor = ", result)
+	result, err = thermistor.ResistanceToTemperature(1000, thermistor.T310K)
+	fmt.Println("1000 Ohm from T3_10K Thermistor = ", result)
+	result, err = thermistor.ResistanceToTemperature(87, thermistor.DPT100)
+	fmt.Println("87 Ohm from D_PT100 Thermistor = ", result)
 
 }

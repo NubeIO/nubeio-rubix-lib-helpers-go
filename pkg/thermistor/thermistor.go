@@ -5,17 +5,6 @@ import (
 	"math"
 )
 
-/*
-type ThermistorTableType ThermistorTable
-const (
-	T2_10K = "T2_10K_TempTable"
-	T3_10K = "T3_10K_TempTable"
-	D_PT100 = "D_PT100_TempTable"
-	E_PT100 = "E_PT100_TempTable"
-	T1_20K = "T1_20K_TempTable"
-)
-*/
-
 type resistanceAndTemperaturePair struct {
 	resistance  float64
 	temperature float64
@@ -57,8 +46,8 @@ func Scale(value float64, inMin float64, inMax float64, outMin float64, outMax f
 	}
 }
 
-//T2_10K_TempTable :Type 2 10K thermistor
-var T2_10K_TempTable = ThermistorTable{
+//T210K :Type 2 10K thermistor
+var T210K = ThermistorTable{
 	{963849, -55},
 	{670166, -50},
 	{471985, -45},
@@ -103,8 +92,8 @@ var T2_10K_TempTable = ThermistorTable{
 	{186.1, 150},
 }
 
-//T3_10K_TempTable :Type 3 10K thermistor
-var T3_10K_TempTable = ThermistorTable{
+//T310K :Type 3 10K thermistor
+var T310K = ThermistorTable{
 	{607800, -55},
 	{441200, -50},
 	{323600, -45},
@@ -149,8 +138,8 @@ var T3_10K_TempTable = ThermistorTable{
 	{237, 150},
 }
 
-//D_PT100_TempTable :Type D-PT100 thermistor
-var D_PT100_TempTable = ThermistorTable{
+//DPT100 :Type D-PT100 thermistor
+var DPT100 = ThermistorTable{
 	{157.33, 150},
 	{155.46, 145},
 	{153.58, 140},
@@ -196,8 +185,8 @@ var D_PT100_TempTable = ThermistorTable{
 	{78.32, -55},
 }
 
-//E_PT100_TempTable :Type E-PT100 thermistor
-var E_PT100_TempTable = ThermistorTable{
+//EPT100 :Type E-PT100 thermistor
+var EPT100 = ThermistorTable{
 	{1573.3, 150},
 	{1554.6, 145},
 	{1535.8, 140},
@@ -242,8 +231,8 @@ var E_PT100_TempTable = ThermistorTable{
 	{783.2, -55},
 }
 
-//T1_20K_TempTable :Type 1 20K thermistor
-var T1_20K_TempTable = ThermistorTable{
+//T120K :Type 1 20K thermistor
+var T120K = ThermistorTable{
 	{2394000, -55},
 	{1646200, -50},
 	{1145800, -45},
