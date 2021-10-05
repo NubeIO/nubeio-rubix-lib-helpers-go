@@ -1,14 +1,20 @@
-package main
+package thermistor
 
 import (
 	"errors"
-	"fmt"
 	"math"
 )
 
-func main() {
-	ResistanceToTemperature(1000, T2_10K_TempTable)
-}
+/*
+type ThermistorTableType ThermistorTable
+const (
+	T2_10K = "T2_10K_TempTable"
+	T3_10K = "T3_10K_TempTable"
+	D_PT100 = "D_PT100_TempTable"
+	E_PT100 = "E_PT100_TempTable"
+	T1_20K = "T1_20K_TempTable"
+)
+*/
 
 type resistanceAndTemperaturePair struct {
 	resistance  float64
@@ -34,10 +40,11 @@ func ResistanceToTemperature(resistance float64, tempTable ThermistorTable) (flo
 	}
 	//fmt.Println("resistance: ", resistance, "lowerRes: ", lowerRes, "higherRes: ", higherRes, "lowerTemp: ", lowerTemp, "higherTemp: ", higherTemp )
 	outValue = Scale(resistance, lowerRes, higherRes, lowerTemp, higherTemp)
-	fmt.Println("RESULT: ", outValue)
+	//fmt.Println("RESULT: ", outValue)
 	return outValue, nil
 }
 
+//TODO: Should use Scale function from Utils once added to flow-framework
 //Scale returns the (float64) input value (between inputMin and inputMax) scaled to a value between outputMin and outputMax
 func Scale(value float64, inMin float64, inMax float64, outMin float64, outMax float64) float64 {
 	scaled := ((value-inMin)/(inMax-inMin))*(outMax-outMin) + outMin
