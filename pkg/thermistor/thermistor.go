@@ -2,7 +2,7 @@ package thermistor
 
 import (
 	"errors"
-	"math"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/numbers"
 )
 
 type resistanceAndTemperaturePair struct {
@@ -28,23 +28,12 @@ func ResistanceToTemperature(resistance float64, tempTable ThermistorTable) (flo
 		higherTemp = pair.temperature
 	}
 	//fmt.Println("resistance: ", resistance, "lowerRes: ", lowerRes, "higherRes: ", higherRes, "lowerTemp: ", lowerTemp, "higherTemp: ", higherTemp )
-	outValue = Scale(resistance, lowerRes, higherRes, lowerTemp, higherTemp)
+	outValue = numbers.Scale(resistance, lowerRes, higherRes, lowerTemp, higherTemp)
 	//fmt.Println("RESULT: ", outValue)
 	return outValue, nil
 }
 
-//TODO: Should use Scale function from Utils once added to flow-framework
-//Scale returns the (float64) input value (between inputMin and inputMax) scaled to a value between outputMin and outputMax
-func Scale(value float64, inMin float64, inMax float64, outMin float64, outMax float64) float64 {
-	scaled := ((value-inMin)/(inMax-inMin))*(outMax-outMin) + outMin
-	if scaled > math.Max(outMin, outMax) {
-		return math.Max(outMin, outMax)
-	} else if scaled < math.Min(outMin, outMax) {
-		return math.Min(outMin, outMax)
-	} else {
-		return scaled
-	}
-}
+// Thermistor Tables MUST be entered in decreasing order of resistance values.
 
 //T210K :Type 2 10K thermistor
 var T210K = ThermistorTable{
