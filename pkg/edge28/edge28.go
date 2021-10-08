@@ -7,19 +7,34 @@ import (
 	"strconv"
 )
 
-//PercentToGPIOValue scales 0-100% (0-10v) input to BBB GPIO 100-16.666 (16.666-0 is for 10v-12v) .  Note that the input 0-100% input has a 0.9839 scaling factor (this is a software cal for the UOs)
+// THESE FUNCTIONS ALL NEED TO BE VERIFIED AGAINST THE EDGE28 API RESPONSE PAYLOAD
+
+//PercentToGPIOValue scales 0-100% input to BBB GPIO 100-16.666 (16.666-0 is for 10v-12v) .  Note that the input 0-100% input has a 0.9839 scaling factor (this is a software cal for the UOs)
 func PercentToGPIOValue(value float64) float64 {
 	if value <= 0 {
 		return 100
 	} else if value >= 100 {
 		return 16.666666666666668
 	} else {
-		return numbers.Scale(value, 120, 0, 0, 100)
+		value = value * 0.9839 //TODO: IS THIS REQUIRED/CORRECT??
+		return numbers.Scale(value, 100, 0, 16.666666666666668, 100)
 	}
 }
 
-//digitalToGPIOValue converts true/false values (all basic types allowed) to BBB GPIO 0/1 ON/OFF.  Note that the GPIO value for digital points is inverted.
-func digitalToGPIOValue(input interface{}) (float64, error) {
+//VoltageToGPIOValue scales 0-10vdc input to BBB GPIO 100-16.666 (16.666-0 is for 10v-12v) .  Note that the input 0-100% input has a 0.9839 scaling factor (this is a software cal for the UOs)
+func VoltageToGPIOValue(value float64) float64 {
+	if value <= 0 {
+		return 100
+	} else if value >= 10 {
+		return 16.666666666666668
+	} else {
+		value = value * 0.9839 //TODO: IS THIS REQUIRED/CORRECT??
+		return numbers.Scale(value, 10, 0, 16.666666666666668, 10)
+	}
+}
+
+//DigitalToGPIOValue converts true/false values (all basic types allowed) to BBB GPIO 0/1 ON/OFF.  Note that the GPIO value for digital points is inverted.
+func DigitalToGPIOValue(input interface{}) (float64, error) {
 	var inputAsBool bool
 	var err error = nil
 	switch input.(type) {
@@ -43,25 +58,36 @@ func digitalToGPIOValue(input interface{}) (float64, error) {
 	}
 }
 
+//GPIOValueToPercent scales BBB GPIO Value (0-1) to 0-100%
+func GPIOValueToPercent(value float64) float64 {
+	if value <= 0 {
+		return 0
+	} else if value >= 1 {
+		return 100
+	} else {
+		return numbers.Scale(value, 0, 1, 0, 100)
+	}
+}
+
 //GPIOValueToVoltage scales BBB GPIO Value (0-1) to 0-10vdc
 func GPIOValueToVoltage(value float64) float64 {
 	if value <= 0 {
-		return 10
-	} else if value >= 1 {
 		return 0
+	} else if value >= 1 {
+		return 10
 	} else {
 		return numbers.Scale(value, 0, 1, 0, 10)
 	}
 }
 
-//GPIOValueToPercent scales BBB GPIO Value (0-1) to 0-100%
-func GPIOValueToPercent(value float64) float64 {
+//ScaleGPIOValueToRange scales a BBB GPIO Value (0-1) input to the specified output range.
+func ScaleGPIOValueToRange(value, outputMin, outputMax float64) float64 {
 	if value <= 0 {
-		return 10
+		return outputMin
 	} else if value >= 1 {
-		return 0
+		return outputMax
 	} else {
-		return numbers.Scale(value, 0, 1, 0, 100)
+		return numbers.Scale(value, 0, 1, outputMin, outputMax)
 	}
 }
 
@@ -74,11 +100,33 @@ func GPIOValueToDigital(value float64) float64 {
 	}
 }
 
+//ScaleGPIOValueTo420ma scales a BBB GPIO Value (0-1) input to 4-20mA.
+func ScaleGPIOValueTo420ma(value float64) float64 {
+	if value <= 0 {
+		return 4
+	} else if value >= 1 {
+		return 20
+	} else {
+		return numbers.Scale(value, 0, 1, 4, 20)
+	}
+}
+
 //InvertDi the BBB returns DI 0 as ON/Closed Circuit and 1 as OFF/Open Circuit which is opposite to conventional logic
 func InvertDi(value float64) float64 {
 	if value == 1 {
 		return 0
 	} else {
 		return 1
+	}
+}
+
+//Scale420maToRange scales a 4-20mA input to the specified output range.
+func Scale420maToRange(value, outputMin, outputMax float64) float64 {
+	if value <= 4 {
+		return outputMin
+	} else if value >= 20 {
+		return outputMax
+	} else {
+		return numbers.Scale(value, 4, 20, outputMin, outputMax)
 	}
 }
