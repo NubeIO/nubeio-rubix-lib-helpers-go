@@ -111,6 +111,18 @@ func ScaleGPIOValueTo420ma(value float64) float64 {
 	}
 }
 
+//ScaleGPIOValueToResistance scales a BBB GPIO Value (0-1) input to Resistance.
+func ScaleGPIOValueToResistance(value float64) float64 {
+	if value <= 0 { //TODO: is this correct? should there be another value for 4mA? and 0 would be 0mA?
+		return 0
+	} else if value >= 0.96 { //Upper limit of RAW -> Resistance Equation provided by Craig Burrows
+		return 544884.73
+	} else {
+		result := (8.65943 * ((value / 0.5555) / 0.1774)) / (9.89649 - (value / 0.5555 / 0.1774)) * 1000 //RAW -> Resistance Equation provided by Craig Burrows
+		return result
+	}
+}
+
 //InvertDi the BBB returns DI 0 as ON/Closed Circuit and 1 as OFF/Open Circuit which is opposite to conventional logic
 func InvertDi(value float64) float64 {
 	if value == 1 {
