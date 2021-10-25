@@ -3,6 +3,7 @@ package edge28
 import (
 	"errors"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/numbers"
+	"math"
 	"reflect"
 	"strconv"
 )
@@ -74,7 +75,9 @@ func GPIOValueToPercent(value float64) float64 {
 	} else if value >= 1 {
 		return 100
 	} else {
-		return numbers.Scale(value, 0, 1, 0, 100)
+		result := numbers.Scale(value, 0, 1, 0, 100)
+		result = math.Round(result*10) / 10
+		return result
 	}
 }
 
@@ -86,7 +89,9 @@ func GPIOValueToVoltage(value float64) float64 {
 	} else if value >= 1 {
 		return 10
 	} else {
-		return numbers.Scale(value, 0, 1, 0, 10)
+		result := numbers.Scale(value, 0, 1, 0, 10)
+		result = math.Round(result*100) / 100
+		return result
 	}
 }
 
@@ -98,7 +103,8 @@ func ScaleGPIOValueToRange(value, outputMin, outputMax float64) float64 {
 	} else if value >= 1 {
 		return outputMax
 	} else {
-		return numbers.Scale(value, 0, 1, outputMin, outputMax)
+		result := numbers.Scale(value, 0, 1, outputMin, outputMax)
+		return result
 	}
 }
 
@@ -120,7 +126,9 @@ func ScaleGPIOValueTo420ma(value float64) float64 {
 	} else if value >= 1 {
 		return 20
 	} else {
-		return numbers.Scale(value, 0.2, 1, 4, 20)
+		result := numbers.Scale(value, 0.2, 1, 4, 20)
+		result = math.Round(result*100) / 100
+		return result
 	}
 }
 
@@ -132,7 +140,9 @@ func ScaleGPIOValueTo420maOrError(value float64) (float64, error) {
 	} else if value >= 1 {
 		return 20, nil
 	} else {
-		return numbers.Scale(value, 0, 1, 4, 20), nil
+		result := numbers.Scale(value, 0, 1, 4, 20)
+		result = math.Round(result*100) / 100
+		return result, nil
 	}
 }
 
@@ -141,10 +151,11 @@ func ScaleGPIOValueToResistance(value float64) float64 {
 	// CorrectGPIOValueForUIs() is not required here because the equation below takes care of the correction.
 	if value <= 0 {
 		return 0
-	} else if value >= 0.96 { //Upper limit of RAW -> Resistance Equation provided by Craig Burrows (25/10/2021).
-		return 544884.73
+	} else if value >= 0.925 { //Upper limit of RAW -> Resistance Equation provided by Craig Burrows (25/10/2021).
+		return 1361693
 	} else {
 		result := (8.65943 * ((value / (0.5555 * 0.9545)) / 0.1774)) / (9.89649 - ((value / (0.5555 * 0.9545)) / 0.1774)) * 1000 //RAW -> Resistance Equation provided by Craig Burrows (25/10/2021).
+		result = math.Round(result)
 		return result
 	}
 }
@@ -165,6 +176,8 @@ func Scale420maToRange(value, outputMin, outputMax float64) float64 {
 	} else if value >= 20 {
 		return outputMax
 	} else {
-		return numbers.Scale(value, 4, 20, outputMin, outputMax)
+		result := numbers.Scale(value, 4, 20, outputMin, outputMax)
+		result = math.Round(result*100) / 100
+		return result
 	}
 }
