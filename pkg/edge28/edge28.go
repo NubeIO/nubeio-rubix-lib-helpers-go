@@ -16,7 +16,7 @@ func PercentToGPIOValue(value float64) float64 {
 	} else if value >= 100 {
 		return 16.666666666666668
 	} else {
-		value = value * 0.9839 //TODO: IS THIS REQUIRED/CORRECT??
+		//value = value * 0.9839 //TODO: IS THIS REQUIRED/CORRECT??
 		return numbers.Scale(value, 100, 0, 16.666666666666668, 100)
 	}
 }
@@ -28,7 +28,7 @@ func VoltageToGPIOValue(value float64) float64 {
 	} else if value >= 10 {
 		return 16.666666666666668
 	} else {
-		value = value * 0.9839 //TODO: IS THIS REQUIRED/CORRECT??
+		//value = value * 0.9839 //TODO: IS THIS REQUIRED/CORRECT??
 		return numbers.Scale(value, 10, 0, 16.666666666666668, 10)
 	}
 }
@@ -52,9 +52,9 @@ func DigitalToGPIOValue(input interface{}) (float64, error) {
 	if err != nil {
 		return 0, err
 	} else if inputAsBool {
-		return 0, nil // 0 is the 12vdc/ON GPIO value
+		return 1, nil // 1 is the 12vdc/ON GPIO value
 	} else {
-		return 1, nil // 1 is the 0vdc/OFF GPIO value
+		return 0, nil // 0 is the 0vdc/OFF GPIO value
 	}
 }
 
@@ -102,12 +102,24 @@ func GPIOValueToDigital(value float64) float64 {
 
 //ScaleGPIOValueTo420ma scales a BBB GPIO Value (0-1) input to 4-20mA.
 func ScaleGPIOValueTo420ma(value float64) float64 {
-	if value <= 0 {
+	if value <= 0 { //TODO: is this correct? should there be another value for 4mA? and 0 would be 0mA?
 		return 4
 	} else if value >= 1 {
 		return 20
 	} else {
 		return numbers.Scale(value, 0, 1, 4, 20)
+	}
+}
+
+//ScaleGPIOValueToResistance scales a BBB GPIO Value (0-1) input to Resistance.
+func ScaleGPIOValueToResistance(value float64) float64 {
+	if value <= 0 { //TODO: is this correct? should there be another value for 4mA? and 0 would be 0mA?
+		return 0
+	} else if value >= 0.96 { //Upper limit of RAW -> Resistance Equation provided by Craig Burrows
+		return 544884.73
+	} else {
+		result := (8.65943 * ((value / 0.5555) / 0.1774)) / (9.89649 - (value / 0.5555 / 0.1774)) * 1000 //RAW -> Resistance Equation provided by Craig Burrows
+		return result
 	}
 }
 
