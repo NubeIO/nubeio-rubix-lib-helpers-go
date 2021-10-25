@@ -112,7 +112,7 @@ func GPIOValueToDigital(value float64) float64 {
 	}
 }
 
-//ScaleGPIOValueTo420ma scales a BBB GPIO Value (0-1) input to 4-20mA.
+//ScaleGPIOValueTo420ma scales a BBB GPIO Value (0.2-1) input to 4-20mA.
 func ScaleGPIOValueTo420ma(value float64) float64 {
 	value = CorrectGPIOValueForUIs(value)
 	if value <= 0.2 {
@@ -124,7 +124,7 @@ func ScaleGPIOValueTo420ma(value float64) float64 {
 	}
 }
 
-//ScaleGPIOValueTo420maOrError scales a BBB GPIO Value (0-1) input to 4-20mA.
+//ScaleGPIOValueTo420maOrError scales a BBB GPIO Value (0.2-1) input to 4-20mA, or it produces an error if the GPIO value is < 0.2 (less than 4mA).
 func ScaleGPIOValueTo420maOrError(value float64) (float64, error) {
 	value = CorrectGPIOValueForUIs(value)
 	if value <= 0.195 {
