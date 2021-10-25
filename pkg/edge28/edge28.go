@@ -118,7 +118,7 @@ func ScaleGPIOValueToResistance(value float64) float64 {
 	} else if value >= 0.96 { //Upper limit of RAW -> Resistance Equation provided by Craig Burrows
 		return 544884.73
 	} else {
-		result := (8.65943 * ((value / 0.5555) / 0.1774)) / (9.89649 - (value / 0.5555 / 0.1774)) * 1000 //RAW -> Resistance Equation provided by Craig Burrows
+		result := (8.65943 * ((value / (0.5555 * 0.9545)) / 0.1774)) / (9.89649 - ((value / (0.5555 * 0.9545)) / 0.1774)) * 1000 //RAW -> Resistance Equation provided by Craig Burrows
 		return result
 	}
 }
