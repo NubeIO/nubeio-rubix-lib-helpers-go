@@ -127,8 +127,8 @@ var T310K = ThermistorTable{
 	{237, 150},
 }
 
-//DPT100 :Type D-PT100 thermistor
-var DPT100 = ThermistorTable{
+//PT100 :Type PT100 thermistor
+var PT100 = ThermistorTable{
 	{157.33, 150},
 	{155.46, 145},
 	{153.58, 140},
@@ -174,8 +174,8 @@ var DPT100 = ThermistorTable{
 	{78.32, -55},
 }
 
-//EPT100 :Type E-PT100 thermistor
-var EPT100 = ThermistorTable{
+//PT1000 :Type PT1000 thermistor
+var PT1000 = ThermistorTable{
 	{1573.3, 150},
 	{1554.6, 145},
 	{1535.8, 140},
