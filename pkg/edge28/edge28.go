@@ -10,8 +10,8 @@ import (
 
 //UIGPIOCORRECTIONFACTOR This correction factor is due to the Edge28 Hardware that scales the UI Voltage/Resistance (0-10v) readings to the onboard ADC.
 //The voltage on the ADC, when the UI pin voltage is 10vdc, is 1.774v; but the ACD GPIO Output (0-1) is over the range of (0v-1.8v) therefore the ADC (GPIO) value
-// has a maximum reading of 0.9878 (on the Edge28 hardware) when there is 10vdc on the UI pin.
-var UIGPIOCORRECTIONFACTOR float64 = 0.9878
+// has a maximum reading of 0.9544 (on the Edge28 hardware) when there is 10vdc on the UI pin.  This value has been modified slightly based on hardware testing.
+var UIGPIOCORRECTIONFACTOR float64 = 0.9544
 
 //CorrectGPIOValueForUIs scales the actual UI GPIO values to account for the correction factor described above in UIGPIOCORRECTIONFACTOR
 func CorrectGPIOValueForUIs(value float64) float64 {
@@ -25,7 +25,6 @@ func PercentToGPIOValue(value float64) float64 {
 	} else if value >= 100 {
 		return 16.666666666666668
 	} else {
-		//value = value * 0.9839 //TODO: IS THIS REQUIRED/CORRECT??
 		return numbers.Scale(value, 100, 0, 16.666666666666668, 100)
 	}
 }
@@ -154,7 +153,7 @@ func ScaleGPIOValueToResistance(value float64) float64 {
 	} else if value >= 0.925 { //Upper limit of RAW -> Resistance Equation provided by Craig Burrows (25/10/2021).
 		return 1361693
 	} else {
-		result := (8.65943 * ((value / (0.5555 * 0.9545)) / 0.1774)) / (9.89649 - ((value / (0.5555 * 0.9545)) / 0.1774)) * 1000 //RAW -> Resistance Equation provided by Craig Burrows (25/10/2021).
+		result := (8.65943 * ((value / (0.5555 * 0.9544)) / 0.1774)) / (9.89649 - ((value / (0.5555 * 0.9544)) / 0.1774)) * 1000 //RAW -> Resistance Equation provided by Craig Burrows (25/10/2021).
 		result = math.Round(result)
 		return result
 	}
