@@ -61,9 +61,9 @@ func DigitalToGPIOValue(input interface{}) (float64, error) {
 	if err != nil {
 		return 0, err
 	} else if inputAsBool {
-		return 1, nil // 1 is the 12vdc/ON GPIO value
+		return 0, nil // 0 is the 12vdc/ON GPIO value
 	} else {
-		return 0, nil // 0 is the 0vdc/OFF GPIO value
+		return 100, nil // 100 is the 0vdc/OFF GPIO value
 	}
 }
 
