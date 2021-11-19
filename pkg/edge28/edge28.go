@@ -36,8 +36,7 @@ func VoltageToGPIOValue(value float64) float64 {
 	} else if value >= 10 {
 		return 16.666666666666668
 	} else {
-		//value = value * 0.9839 //TODO: IS THIS REQUIRED/CORRECT??
-		return numbers.Scale(value, 10, 0, 16.666666666666668, 10)
+		return numbers.Scale(value, 10, 0, 16.666666666666668, 100)
 	}
 }
 
