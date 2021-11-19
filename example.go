@@ -42,7 +42,7 @@ func main() {
 	result, err = thermistor.ResistanceToTemperature(1000, thermistor.T310K)
 	fmt.Println("1000 Ohm from T3_10K Thermistor = ", result)
 	result, err = thermistor.ResistanceToTemperature(87, thermistor.PT100)
-	fmt.Println("87 Ohm from D_PT100 Thermistor = ", result)
+	fmt.Println("87 Ohm from PT100 Thermistor = ", result)
 
 	headers := make(http.Header)
 	headers.Add("Authorization", "")
