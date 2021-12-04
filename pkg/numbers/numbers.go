@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-//THE FOLLOWING NIL CHECK FUNCTIONS COULD PROBABLY BE REDUCED TO 2 TEMPLATE FUNCTIONS
-
 //GetFloat64ValueOrZero returns 0 if float64 input pointer is nil, otherwise it returns the value at the pointer.
 func GetFloat64ValueOrZero(b *float64) float64 {
 	if b == nil {

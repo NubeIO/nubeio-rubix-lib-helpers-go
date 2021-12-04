@@ -123,7 +123,7 @@ func getNormalizedUrl(urlStr string) (string, error) {
 	}
 	result := urlStr
 
-	//sorting query param strings
+	//sorting query param str
 	if len(urlObj.RawQuery) > 0 {
 		result = strings.Replace(urlStr, urlObj.RawQuery, "", 1)
 

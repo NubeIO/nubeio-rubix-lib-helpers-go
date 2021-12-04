@@ -6,14 +6,12 @@ import (
 	"strings"
 )
 
-
 const (
 	InvalidLogicalString = "invalid string value to test boolean value"
 )
 
 var _false = []string{"off", "no", "0", "false", "False"}
 var _true = []string{"on", "yes", "1", "true", "True"}
-
 
 // Boolean func returns boolean value of string value like on, off, 0, 1, yes, no
 // returns boolean value of string input. You can chain this function on other function
@@ -34,8 +32,6 @@ func Boolean(input string) (bool, error) {
 	return false, errors.New(InvalidLogicalString)
 }
 
-
-
 func contains(slice []string, item string) bool {
 	set := make(map[string]struct{}, len(slice))
 	for _, s := range slice {
@@ -45,4 +41,28 @@ func contains(slice []string, item string) bool {
 	return ok
 }
 
+func NewTrue() *bool {
+	b := true
+	return &b
+}
 
+func NewFalse() *bool {
+	b := false
+	return &b
+}
+
+func BoolIsNil(b *bool) bool {
+	if b == nil {
+		return false
+	} else {
+		return *b
+	}
+}
+
+func IsTrue(b *bool) bool {
+	if b == nil {
+		return false
+	} else {
+		return *b
+	}
+}
