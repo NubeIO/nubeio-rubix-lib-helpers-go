@@ -9,8 +9,8 @@ import (
 )
 
 type Host struct {
-	ID                   string    `json:"id" gorm:"primarykey"`
-	Name                 string    `json:"name"  gorm:"type:varchar(255);unique;not null"`
+	ID                   string    `json:"id"`
+	Name                 string    `json:"name"`
 	IP                   string    `json:"ip"`
 	Port                 int       `json:"port"`
 	Username             string    `json:"username"`
@@ -39,9 +39,14 @@ type Controller struct {
 	SSH *goph.Client
 }
 
+//RunCommand will run a local or remote command, if CommandOpts.Sudo is true then a sudo is added to the existing command (cmd = "sudo " + CommandOpts.CMD)
 func (h Host) RunCommand() (out string, result bool, err error) {
+	cmd := h.CommandOpts.CMD
+	if h.CommandOpts.Sudo {
+		cmd = "sudo " + h.CommandOpts.CMD
+	}
 	if h.IsLocalhost {
-		out, err := command.RunCMD(h.CommandOpts.CMD, h.CommandOpts.Debug)
+		out, err := command.RunCMD(cmd, h.CommandOpts.Debug)
 		if err != nil {
 			return "", false, err
 		}
@@ -52,12 +57,11 @@ func (h Host) RunCommand() (out string, result bool, err error) {
 			return "", false, err
 		}
 		defer c.Close()
-		o, err := c.Run(h.CommandOpts.CMD)
+		o, err := c.Run(cmd)
 		if err != nil {
 			return "", false, err
 		}
 		return string(o), true, err
-
 	}
 }
 

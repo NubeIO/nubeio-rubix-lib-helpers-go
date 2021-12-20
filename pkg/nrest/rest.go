@@ -43,9 +43,10 @@ type ReqOpt struct {
 	RetryWaitTime    time.Duration
 	RetryMaxWaitTime time.Duration
 
-	Params  map[string]interface{}
-	Data    map[string]interface{}
-	Headers map[string]interface{}
+	Params         map[string]interface{}
+	SetQueryString string
+	Data           map[string]interface{}
+	Headers        map[string]interface{}
 
 	Cookies        map[string]interface{}
 	CookiePath     string
@@ -170,7 +171,7 @@ func (s *Service) Do(method string, reqUrl string, opt *ReqOpt) *Reply {
 	case "get", "delete", "head":
 		client = client.SetQueryParams(opt.ParseData(opt.Params))
 		if method == "get" {
-			resp, err = client.R().Get(reqUrl)
+			resp, err = client.R().SetQueryString(opt.SetQueryString).Get(reqUrl)
 			return s.GetResult(resp, err)
 		}
 
@@ -185,7 +186,7 @@ func (s *Service) Do(method string, reqUrl string, opt *ReqOpt) *Reply {
 		}
 
 	case "post", "put", "patch":
-		req := client.R()
+		req := client.R().SetQueryString(opt.SetQueryString)
 		if len(opt.Data) > 0 {
 			// SetFormData method sets Form parameters and their values in the current request.
 			// It's applicable only HTTP method `POST` and `PUT` and requests content type would be
