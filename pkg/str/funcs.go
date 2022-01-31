@@ -4,7 +4,6 @@ import (
 	"errors"
 	"regexp"
 	"strings"
-	"unicode"
 )
 
 const (
@@ -207,20 +206,6 @@ func replaceStr(input, search, replace, types string) string {
 	}
 	end := start + len(search)
 	return input[:start] + replace + input[end:]
-}
-
-func UcFirst(val string) string {
-	for i, v := range val {
-		return string(unicode.ToUpper(v)) + val[i+1:]
-	}
-	return ""
-}
-
-func LcFirst(str string) string {
-	for i, v := range str {
-		return string(unicode.ToLower(v)) + str[i+1:]
-	}
-	return ""
 }
 
 func NewStringAddress(str string) *string {
