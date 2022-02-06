@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -29,12 +30,6 @@ const (
 var defaultTimeout = 3 * time.Second
 
 var defaultMaxRetries = 100
-
-type Service struct {
-	BaseUri         string
-	Proxy           string
-	EnableKeepAlive bool
-}
 
 type ReqOpt struct {
 	Timeout time.Duration
@@ -69,6 +64,43 @@ type ApiStdRes struct {
 	Code    int
 	Message string
 	Data    interface{}
+}
+
+type Service struct {
+	BaseUri         string //0.0.0.0 or nube-io.com
+	Proxy           string
+	EnableKeepAlive bool
+}
+
+type ReqType struct {
+	BaseUri string //0.0.0.0 or nube-io.com
+	Port    int    // 80 or 443
+	HTTPS   bool
+	Path    string //  /api/points
+	Method  string
+	Debug   bool
+}
+
+func DoHTTPReq(r *ReqType, opt *ReqOpt) (res *Reply, status int, err error) {
+	host := fmt.Sprintf("http://%s:%d", r.BaseUri, r.Port)
+	if r.HTTPS {
+		host = fmt.Sprintf("https://%s:%d", r.BaseUri, r.Port)
+	}
+	s := &Service{
+		BaseUri: host,
+	}
+	if r.Method == "" {
+		r.Method = GET
+	}
+	req := s.Do(r.Method, r.Path, opt)
+	if r.Debug {
+		if req.Err != nil {
+			log.Error()
+		} else {
+			log.Println()
+		}
+	}
+	return req, req.Status(), req.Err
 }
 
 func (ReqOpt) ParseData(d map[string]interface{}) map[string]string {

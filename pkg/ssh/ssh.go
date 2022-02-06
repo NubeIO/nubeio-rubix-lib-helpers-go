@@ -1,8 +1,11 @@
 package ssh
 
 import (
+	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/system/command"
+	sh "github.com/helloyi/go-sshclient"
 	"github.com/melbahja/goph"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	"net"
 	"time"
@@ -39,6 +42,16 @@ type Controller struct {
 	SSH *goph.Client
 }
 
+//fmt.Println("222222")
+//client1, err := sh.DialWithPasswd("120.151.62.75:2221", "debian", "N00BConnect")
+//if err != nil {
+//fmt.Println(err)
+//}
+//defer client1.Close()
+//
+//ccc, _ := client1.Cmd("pwd").Output()
+//fmt.Println(string(ccc))
+
 //RunCommand will run a local or remote command, if CommandOpts.Sudo is true then a sudo is added to the existing command (cmd = "sudo " + CommandOpts.CMD)
 func (h Host) RunCommand() (out string, result bool, err error) {
 	cmd := h.CommandOpts.CMD
@@ -52,12 +65,13 @@ func (h Host) RunCommand() (out string, result bool, err error) {
 		}
 		return string(out), false, err
 	} else {
-		c, err := h.newRemoteClient(h)
+		host := fmt.Sprintf("%s:%d", h.IP, h.Port)
+		c, err := sh.DialWithPasswd(host, h.Username, h.Password)
 		if err != nil {
 			return "", false, err
 		}
 		defer c.Close()
-		o, err := c.Run(cmd)
+		o, err := c.Cmd(cmd).Output()
 		if err != nil {
 			return "", false, err
 		}
@@ -97,5 +111,6 @@ func verifyHost(host string, remote net.Addr, key ssh.PublicKey) error {
 
 		return nil
 	}
+	log.Println("SSH", hostFound, err)
 	return goph.AddKnownHost(host, remote, key, "")
 }

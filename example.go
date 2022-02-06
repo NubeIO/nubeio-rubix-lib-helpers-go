@@ -3,17 +3,34 @@ package main
 import (
 	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/bools"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/ssh"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/system/admin"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/system/systemd"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/system/ufw"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nrest"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/thermistor"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/uuid"
+	"time"
 )
 
 type T struct {
 	Health   string `json:"health"`
 	Database string `json:"database"`
+}
+
+func httpReq(r *nrest.ReqType, opt *nrest.ReqOpt, body interface{}) *nrest.Reply {
+	_ip := fmt.Sprintf("http://%s:%s", "0.0.0.0", "1660")
+	s := &nrest.Service{
+		BaseUri: _ip,
+	}
+	opt = &nrest.ReqOpt{
+		Timeout:          500 * time.Second,
+		RetryCount:       0,
+		RetryWaitTime:    0 * time.Second,
+		RetryMaxWaitTime: 0,
+		Json:             body,
+	}
+
+	if r.Method == "" {
+		r.Method = nrest.GET
+	}
+	return s.Do(r.Method, r.Path, opt)
 }
 
 func main() {
@@ -39,91 +56,21 @@ func main() {
 	result, err = thermistor.ResistanceToTemperature(87, thermistor.PT100)
 	fmt.Println("87 Ohm from PT100 Thermistor = ", result)
 
-	h := ssh.Host{
-		IP:          "123.209.74.192",
-		Port:        2022,
-		Username:    "pi",
-		Password:    "N00BRCRC",
-		IsLocalhost: false,
-		CommandOpts: ssh.CommandOpts{
-			CMD: "pwd",
-		},
+	s := &nrest.Service{
+		BaseUri: "http://0.0.0.0:1660",
 	}
-	command, _, err := h.RunCommand()
-	if err != nil {
-		fmt.Println(err)
-		return
+	opt := &nrest.ReqOpt{
+		Timeout:          500 * time.Second,
+		RetryCount:       0,
+		RetryWaitTime:    0 * time.Second,
+		RetryMaxWaitTime: 0,
+		//Json:             body,
 	}
+	fmt.Println(s.Do("GET", "/api/points", opt).Status())
+	fmt.Println(s.Do("GET", "/api/points", opt).AsString())
 
-	fmt.Println(command)
-
-	a := admin.Admin{
-		Host: h,
+	rt := &nrest.ReqType{
+		Path: "/api/points",
 	}
-
-	arch, _, err := a.DetectArch()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Printf("%+v\n", arch)
-
-	node := admin.Admin{
-		Host: h,
-	}
-
-	nodeVersion, _, err := node.NodeGetVersion()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Printf("%+v\n", nodeVersion)
-
-	u := ufw.UFW{
-		Host: h,
-	}
-
-	status, isInstalled, err := u.UWFStatus()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Println("UFW STATUS:", status, isInstalled)
-
-	reset, err := u.UWFReset()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Println("UFW reset:", reset)
-
-	profile, err := u.UFWLoadProfile(true)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Println(profile.PortsCurrentState)
-
-	s := systemd.DefaultService{
-		Name: "mosquitto",
-		Host: h,
-	}
-	isInstalled, err = s.IsInstalled()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("isInstalled", isInstalled)
-	start, err := s.Start()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(start)
-
+	fmt.Println(httpReq(rt, opt, nil).StatusCode)
 }
