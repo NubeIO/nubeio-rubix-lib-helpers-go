@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/bools"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nrest"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/system/networking"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/thermistor"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/uuid"
 	"time"
@@ -56,21 +57,27 @@ func main() {
 	result, err = thermistor.ResistanceToTemperature(87, thermistor.PT100)
 	fmt.Println("87 Ohm from PT100 Thermistor = ", result)
 
-	s := &nrest.Service{
-		BaseUri: "http://0.0.0.0:1660",
+	_net, err := networking.GetInterfaceByName("wlp3s0")
+	if err != nil {
+		//return
 	}
-	opt := &nrest.ReqOpt{
-		Timeout:          500 * time.Second,
-		RetryCount:       0,
-		RetryWaitTime:    0 * time.Second,
-		RetryMaxWaitTime: 0,
-		//Json:             body,
-	}
-	fmt.Println(s.Do("GET", "/api/points", opt).Status())
-	fmt.Println(s.Do("GET", "/api/points", opt).AsString())
+	fmt.Println(_net.Interface, _net.Gateway, _net.MacAddress)
 
-	rt := &nrest.ReqType{
-		Path: "/api/points",
-	}
-	fmt.Println(httpReq(rt, opt, nil).StatusCode)
+	//s := &nrest.Service{
+	//	BaseUri: "http://0.0.0.0:1660",
+	//}
+	//opt := &nrest.ReqOpt{
+	//	Timeout:          500 * time.Second,
+	//	RetryCount:       0,
+	//	RetryWaitTime:    0 * time.Second,
+	//	RetryMaxWaitTime: 0,
+	//	//Json:             body,
+	//}
+	//fmt.Println(s.Do("GET", "/api/points", opt).Status())
+	//fmt.Println(s.Do("GET", "/api/points", opt).AsString())
+	//
+	//rt := &nrest.ReqType{
+	//	Path: "/api/points",
+	//}
+	//fmt.Println(httpReq(rt, opt, nil).StatusCode)
 }

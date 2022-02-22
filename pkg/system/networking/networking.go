@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/arr"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/system/command"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/types"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -29,7 +30,7 @@ type NetworkInterfaces struct {
 	IP            string `json:"ip"`
 	IPMask        string `json:"ip_and_mask"`
 	NetMask       string `json:"netmask"`
-	NetMaskLength string `json:"net_mask_length"`
+	NetMaskLength int    `json:"net_mask_length"`
 	Gateway       string `json:"gateway"`
 	MacAddress    string `json:"mac_address"`
 }
@@ -146,7 +147,7 @@ func CheckInternetConnection(iface string) (msg string, connected bool, err erro
 
 //CheckInternetStatus check internet connection for all ports (will ping google.com 2 times)
 func CheckInternetStatus() (msg *arr.Array, err error) {
-	_, ifaceNames, _, err := IpAddresses()
+	_, ifaceNames, _, _, err := IpAddresses()
 	if err != nil {
 		return nil, err
 	}
@@ -172,15 +173,29 @@ func ipv4MaskString(m []byte) string {
 	return fmt.Sprintf("%d.%d.%d.%d", m[0], m[1], m[2], m[3])
 }
 
+func GetInterfaceByName(name string) (*NetworkInterfaces, error) {
+	_, _, _, all, err := IpAddresses()
+	if err != nil {
+		return nil, err
+	}
+	for _, a := range all {
+		if name == a.Interface {
+			return &a, nil
+		}
+	}
+	return nil, nil
+}
+
 // IpAddresses fetches IP addresses
-func IpAddresses() (ip, ifaceNames []string, ipAndNames *arr.Array, err error) {
+func IpAddresses() (ip, ifaceNames []string, ipAndNames *arr.Array, all []NetworkInterfaces, err error) {
 	var names []string
 	var ips []string
+
 	out := arr.NewArray()
 	var interfaces NetworkInterfaces
 	if ifaces, err := net.Interfaces(); err == nil {
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, nil, all, err
 		}
 		for _, iface := range ifaces {
 			if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
@@ -207,11 +222,12 @@ func IpAddresses() (ip, ifaceNames []string, ipAndNames *arr.Array, err error) {
 					interfaces.IP = ip.String()
 					interfaces.IPMask = addr.String()
 					if len(mask) >= 1 {
-						interfaces.NetMaskLength = mask[1]
+						interfaces.NetMaskLength = types.ToInt(mask[1])
 					}
 					interfaces.NetMask = ipv4MaskString(ip.DefaultMask())
 					interfaces.Gateway = GetGatewayIP(iface.Name)
 					interfaces.MacAddress = iface.HardwareAddr.String()
+					all = append(all, interfaces)
 					out.Add(interfaces)
 					names = append(names, iface.Name)
 					ips = append(ips, ip.String())
@@ -219,7 +235,7 @@ func IpAddresses() (ip, ifaceNames []string, ipAndNames *arr.Array, err error) {
 			}
 		}
 	}
-	return ips, names, out, nil
+	return ips, names, out, all, nil
 }
 
 // ExternalIPV4 fetches external IP address in ipv4 format

@@ -33,34 +33,22 @@ type NodeJSInstall struct {
 }
 
 func (a *Admin) InstallNode14() (NodeJSInstall NodeJSInstall, err error) {
-	node, _, err := a.NodeGetVersion()
-	if err != nil {
-		log.Error("node: NodeGetVersion Error: ", err)
-		NodeJSInstall.TextOut = ""
-		NodeJSInstall.InstalledOk = false
-		return NodeJSInstall, err
-	}
-	if node.IsInstalled {
-		NodeJSInstall.AlreadyInstalled = true
-		return NodeJSInstall, err
-	}
 	cmd := "sudo apt update -y \\\n  && curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash - \\\n  && sudo apt-get install -y nodejs \\\n  && nodejs -v"
 	a.Host.CommandOpts.CMD = cmd
 	out, ok, err := a.Host.RunCommand()
 	if err != nil {
-		log.Error("ufw: UWFInstall Error: ", err)
+		log.Error("ufw: Install Error: ", err)
 		NodeJSInstall.TextOut = out
 		NodeJSInstall.InstalledOk = ok
 		return NodeJSInstall, err
 	}
-	node, _, err = a.NodeGetVersion()
+	_, _, err = a.NodeGetVersion()
 	if err != nil {
 		log.Error("node: NodeGetVersion Error: ", err)
 		NodeJSInstall.TextOut = ""
 		NodeJSInstall.InstalledOk = false
 		return NodeJSInstall, err
 	}
-
 	NodeJSInstall.AlreadyInstalled = true
 	return NodeJSInstall, err
 

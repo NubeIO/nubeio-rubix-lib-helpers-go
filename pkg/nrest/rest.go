@@ -100,7 +100,11 @@ func DoHTTPReq(r *ReqType, opt *ReqOpt) (res *Reply, status int, err error) {
 			log.Println()
 		}
 	}
-	return req, req.Status(), req.Err
+	code := req.Status()
+	if code == 0 {
+		code = 400
+	}
+	return req, code, req.Err
 }
 
 func (ReqOpt) ParseData(d map[string]interface{}) map[string]string {
@@ -311,6 +315,16 @@ func (r *Reply) AsJson() (interface{}, error) {
 	return res, err
 }
 
+// AsJsonNoErr return as body as blank interface and ignore any errors
+func (r *Reply) AsJsonNoErr() interface{} {
+	var res interface{}
+	err := json.Unmarshal(r.Body, &res)
+	if err != nil {
+		return nil
+	}
+	return res
+}
+
 // ToInterface return as body as a json
 func (r *Reply) ToInterface(data interface{}) error {
 	if len(r.Body) > 0 {
@@ -320,4 +334,12 @@ func (r *Reply) ToInterface(data interface{}) error {
 		}
 	}
 	return nil
+}
+
+// ToInterface return as body as a json
+func (r *Reply) ToInterfaceNoErr(data interface{}) {
+	if len(r.Body) > 0 {
+		json.Unmarshal(r.Body, data)
+	}
+
 }
