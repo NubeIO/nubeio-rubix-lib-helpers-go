@@ -14,6 +14,10 @@ type URLParts struct {
 	Port      string
 }
 
+func JoinIpPort(url string, port int) (out string, err error) {
+	return fmt.Sprintf("%s:%d", url, port), nil
+}
+
 func SplitURL(url string) URLParts {
 	var o URLParts
 	u := strings.SplitN(url, "://", 2)
