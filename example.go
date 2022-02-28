@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/bools"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/bugs"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nrest"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/system/networking"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/thermistor"
@@ -33,8 +34,14 @@ func httpReq(r *nrest.ReqType, opt *nrest.ReqOpt, body interface{}) *nrest.Reply
 	}
 	return s.Do(r.Method, r.Path, opt)
 }
+func printTime(t time.Time) {
+	zone, offset := t.Zone()
+	fmt.Println(t.Format(time.Kitchen), "Zone:", zone, "Offset UTC:", offset)
+}
 
 func main() {
+
+	fmt.Println(bugs.GetFuncName(printTime))
 
 	b, err := bools.Boolean("on on")
 	if err != nil {
@@ -62,6 +69,12 @@ func main() {
 		//return
 	}
 	fmt.Println(_net.Interface, _net.Gateway, _net.MacAddress)
+
+	printTime(time.Now())
+	printTime(time.Now().UTC())
+
+	loc, _ := time.LoadLocation("America/New_York")
+	printTime(time.Now().In(loc))
 
 	//s := &nrest.Service{
 	//	BaseUri: "http://0.0.0.0:1660",

@@ -1,5 +1,9 @@
 package nils
 
+func NewString(value string) *string {
+	return &value
+}
+
 func StringIsNil(b *string) string {
 	if b == nil {
 		return ""
@@ -17,6 +21,14 @@ func Float64IsNil(b *float64) float64 {
 }
 
 func NewInt(value int) *int {
+	return &value
+}
+
+func NewUint16(value uint16) *uint16 {
+	return &value
+}
+
+func NewUint32(value uint32) *uint32 {
 	return &value
 }
 

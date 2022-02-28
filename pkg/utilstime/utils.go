@@ -1,6 +1,9 @@
 package utilstime
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 func clean(s string) string {
 	if idx := strings.Index(s, ":"); idx != -1 {
@@ -9,4 +12,9 @@ func clean(s string) string {
 		return i
 	}
 	return s
+}
+
+func TimeStamp() (hostTime string) {
+	hostTime = time.Now().Format(time.RFC850)
+	return
 }
