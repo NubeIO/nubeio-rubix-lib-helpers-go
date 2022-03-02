@@ -1,6 +1,7 @@
 package ufw
 
 import (
+	"errors"
 	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/ssh"
 	log "github.com/sirupsen/logrus"
@@ -19,18 +20,8 @@ type UWFInstall struct {
 }
 
 func (ufw *UFW) UWFInstall() (UWFInstall UWFInstall, err error) {
-	_, installed, err := ufw.UWFStatus()
-	if err != nil {
-		log.Error("ufw: UWFInstall Error: ", err)
-		UWFInstall.TextOut = ""
-		UWFInstall.InstalledOk = false
-		return UWFInstall, err
-	}
-	if installed {
-		UWFInstall.AlreadyInstalled = true
-		return UWFInstall, err
-	}
-	cmd := "sudo apt update -y && sudo apt install ufw -y"
+	log.Info("ufw: run install command")
+	cmd := "sudo apt install ufw -y"
 	ufw.Host.CommandOpts.CMD = cmd
 	out, ok, err := ufw.Host.RunCommand()
 	if err != nil {
@@ -39,15 +30,16 @@ func (ufw *UFW) UWFInstall() (UWFInstall UWFInstall, err error) {
 		UWFInstall.InstalledOk = ok
 		return UWFInstall, err
 	}
-	_, installed, err = ufw.UWFStatus()
+	log.Info("ufw: run install command")
+	_, installed, err := ufw.UWFStatus()
 	if err != nil {
 		log.Error("ufw: UWFInstall Error: ", err)
 		UWFInstall.TextOut = ""
-		UWFInstall.InstalledOk = false
+		UWFInstall.InstalledOk = installed
 		return UWFInstall, err
 	}
 	UWFInstall.TextOut = ""
-	UWFInstall.InstalledOk = true
+	UWFInstall.InstalledOk = installed
 	return UWFInstall, err
 }
 
@@ -63,18 +55,30 @@ func (ufw *UFW) UWFReset() (ok bool, err error) {
 }
 
 func (ufw *UFW) UWFEnable() (ok bool, err error) {
-	cmd := "sudo ufw enable"
+	//first make sure port 22 is open, this is to make sure we don't lock ourselves out
+	cmd := "sudo ufw allow 22"
+	ufw.Host.CommandOpts.CMD = cmd
+	_, ok, err = ufw.Host.RunCommand()
+	if err != nil {
+		log.Error("ufw: failed to open port 22: ", err)
+		return ok, errors.New("ufw: failed to open port 22")
+	}
+	cmd = "echo \"yes\" | sudo ufw enable"
 	ufw.Host.CommandOpts.CMD = cmd
 	_, ok, err = ufw.Host.RunCommand()
 	if err != nil {
 		log.Error("ufw: Enable Error: ", err)
 		return ok, err
 	}
+	if !ok {
+		log.Error("ufw: run-command returned false: ", err)
+		return ok, err
+	}
 	return ok, err
 }
 
 func (ufw *UFW) UWFDisable() (ok bool, err error) {
-	cmd := "sudo ufw disable"
+	cmd := "echo \"yes\" | sudo ufw disable"
 	if ufw.Host.CommandOpts.Sudo {
 		cmd = "sudo ufw disable"
 	}
@@ -91,8 +95,24 @@ func (ufw *UFW) UWFDisable() (ok bool, err error) {
 func (ufw *UFW) UWFPort(port int, deny bool) (ok bool, err error) {
 	cmd := fmt.Sprintf("sudo ufw allow %d", port)
 	if deny {
+		if port == 22 {
+			log.Error("ufw: port 22 must be kept open")
+			return ok, errors.New("ufw: failed to open port 22, port 22 must be kept open")
+		}
 		cmd = fmt.Sprintf("sudo ufw deny %d", port)
 	}
+	ufw.Host.CommandOpts.CMD = cmd
+	_, ok, err = ufw.Host.RunCommand()
+	if err != nil {
+		log.Error("ufw: UWFPort Error: ", err)
+		return ok, err
+	}
+	return ok, err
+}
+
+//UWFDefaultPorts nube-io default ports
+func (ufw *UFW) UWFDefaultPorts() (ok bool, err error) {
+	cmd := fmt.Sprintf("sudo ufw allow 22 && sudo ufw allow 1313 && sudo ufw allow 1414 && sudo ufw allow 1616 && sudo ufw allow 1615")
 	ufw.Host.CommandOpts.CMD = cmd
 	_, ok, err = ufw.Host.RunCommand()
 	if err != nil {
