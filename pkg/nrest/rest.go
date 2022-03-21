@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/types"
 	"github.com/go-resty/resty/v2"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -131,6 +132,10 @@ func DoHTTPReq(r *ReqType, opt *ReqOpt) (response *Reply, statusCode int, err er
 	}
 	response = s.Do(r.Method, r.Path, opt)
 	statusCode = response.StatusCode
+	if statusCode == 0 {
+		response.ApiResponseIsBad = true
+		response.StatusCode = 503 //Service unavailable
+	}
 	logPath := fmt.Sprintf("%s.%s() method: %s host: %s statusCode:%d", r.LogPath, r.LogFunc, strings.ToUpper(r.Method), host+r.Path, statusCode)
 	if response.ApiResponseIsBad {
 		log.Errorln(logPath)
@@ -142,8 +147,16 @@ func DoHTTPReq(r *ReqType, opt *ReqOpt) (response *Reply, statusCode int, err er
 	isJson := isJSON(response.AsString())
 	if isJson {
 		response.ApiResponseIsJSON = isJson
-		response.ApiResponseLength = getJSONLen(response.AsJsonNoErr())
+		//get response type as in an object or an array
+		getType := types.DetectMapTypes(response.AsJsonNoErr())
+		if getType.IsArray {
+			response.ApiResponseLength = getJSONLen(response.AsJsonNoErr())
+		} else {
+			response.ApiResponseLength = 1
+		}
+
 	}
+
 	return response, statusCode, err
 }
 

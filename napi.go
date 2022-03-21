@@ -32,7 +32,7 @@ func main() {
 	//bacnet client
 	options := &nrest.ReqOpt{
 		Timeout:          500 * time.Second,
-		RetryCount:       2,
+		RetryCount:       1,
 		RetryWaitTime:    4 * time.Second,
 		RetryMaxWaitTime: 0,
 		Headers:          map[string]interface{}{"Authorization": nubeRest.RubixToken},
@@ -61,6 +61,16 @@ func main() {
 	}
 
 	//get point
-	//BhLtrFaNrtBxhVLyjc5CHi
+	getPoint, r := bacnetClient.GetPoint("BhLtrFaNrtBxhVLyjc5CH")
+	fmt.Println("ApiResponseIsBad", r.ApiReply.ApiResponseIsBad)
+	fmt.Println("ApiResponseIsJSON", r.ApiReply.ApiResponseIsJSON)
+	fmt.Println("ApiResponseLength", r.ApiReply.ApiResponseLength)
+	fmt.Println("Status code", r.ApiReply.Status())
+	fmt.Println("RemoteServerOffline", r.ApiReply.RemoteServerOffline)
+	if r.ApiReply.Err != nil {
+		fmt.Println("Error", r.Response.ErrorBody)
+	} else {
+		fmt.Println(getPoint)
+	}
 
 }
