@@ -8,10 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/types"
 	"github.com/go-resty/resty/v2"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -55,9 +57,14 @@ type ReqOpt struct {
 }
 
 type Reply struct {
-	Err        error
-	Body       []byte
-	StatusCode int
+	IsError           bool
+	Err               error
+	Body              []byte
+	BodyJson          interface{}
+	StatusCode        int
+	ApiResponseIsBad  bool //is true response is a 404
+	ApiResponseIsJSON bool
+	ApiResponseLength int
 }
 
 type ApiStdRes struct {
@@ -79,9 +86,57 @@ type ReqType struct {
 	Path    string //  /api/points
 	Method  string
 	Debug   bool
+	Service string //as in bacnet-server
+	LogPath string //in the log message show path or extra message
+	LogFunc string
 }
 
-func DoHTTPReq(r *ReqType, opt *ReqOpt) (res *Reply, status int, err error) {
+func errorMsg(appName string, msg interface{}, e error) (err interface{}) {
+	if e != nil && msg != "" {
+		err = fmt.Errorf("%s: error:%w  msg:%s", appName, e, msg)
+		return
+	}
+	if e != nil {
+		err = fmt.Errorf("%s: error:%w", appName, e)
+		return
+	}
+	if msg != "" {
+		err = fmt.Errorf("%s: msg:%s", appName, msg)
+		return
+	}
+	return
+}
+
+func isJSON(str string) bool {
+	return json.Unmarshal([]byte(str), &json.RawMessage{}) == nil
+}
+
+func getJSONLen(str interface{}) (length int) {
+	length = reflect.ValueOf(str).Len()
+	return
+}
+
+// StatusCode2xx method returns true if HTTP status `code >= 200 and <= 299` otherwise false.
+func StatusCode2xx(statusCode int) bool {
+	return statusCode > 199 && statusCode < 300
+}
+
+// StatusCode3xx method returns true if HTTP status `code >= 299 and <= 399` otherwise false.
+func StatusCode3xx(statusCode int) bool {
+	return statusCode > 299 && statusCode < 399
+}
+
+// StatusCode4xx method returns true if HTTP status `code >= 399 and <= 499` otherwise false.
+func StatusCode4xx(statusCode int) bool {
+	return statusCode > 399 && statusCode < 499
+}
+
+// StatusCode5xx method returns true if HTTP status `code >= 499 and <= 599` otherwise false.
+func StatusCode5xx(statusCode int) bool {
+	return statusCode > 499 && statusCode < 599
+}
+
+func DoHTTPReq(r *ReqType, opt *ReqOpt) (response *Reply, statusCode int, err error) {
 	host := fmt.Sprintf("http://%s:%d", r.BaseUri, r.Port)
 	if r.HTTPS {
 		host = fmt.Sprintf("https://%s:%d", r.BaseUri, r.Port)
@@ -92,19 +147,34 @@ func DoHTTPReq(r *ReqType, opt *ReqOpt) (res *Reply, status int, err error) {
 	if r.Method == "" {
 		r.Method = GET
 	}
-	req := s.Do(r.Method, r.Path, opt)
-	if r.Debug {
-		if req.Err != nil {
-			log.Error()
+	if r.LogPath == "" {
+		r.LogPath = "nube.helpers.nrest"
+	}
+	response = s.Do(r.Method, r.Path, opt)
+	statusCode = response.StatusCode
+	logPath := fmt.Sprintf("%s.%s() method: %s host: %s statusCode:%d", r.LogPath, r.LogFunc, strings.ToUpper(r.Method), host+r.Path, statusCode)
+	if response.ApiResponseIsBad {
+		log.Errorln(logPath)
+	} else {
+		log.Println(logPath)
+	}
+	fmt.Println(" response.Err", response.Err)
+	err = response.Err
+	//check if response is JSON
+	isJson := isJSON(response.AsString())
+	if isJson {
+		response.ApiResponseIsJSON = isJson
+		//get response type as in an object or an array
+		getType := types.DetectMapTypes(response.AsJsonNoErr())
+		if getType.IsArray {
+			response.ApiResponseLength = getJSONLen(response.AsJsonNoErr())
 		} else {
-			log.Println()
+			response.ApiResponseLength = 1
 		}
+
 	}
-	code := req.Status()
-	if code == 0 {
-		code = 400
-	}
-	return req, code, req.Err
+
+	return response, statusCode, err
 }
 
 func (ReqOpt) ParseData(d map[string]interface{}) map[string]string {
@@ -133,25 +203,20 @@ func (s *Service) Do(method string, reqUrl string, opt *ReqOpt) *Reply {
 			Err: errors.New("request method is empty"),
 		}
 	}
-
 	if reqUrl == "" {
 		return &Reply{
 			Err: errors.New("request url is empty"),
 		}
 	}
-
 	if opt == nil {
 		opt = &ReqOpt{}
 	}
-
 	if s.BaseUri != "" {
 		reqUrl = strings.TrimRight(s.BaseUri, "/") + reqUrl
 	}
-
 	if opt.Timeout == 0 {
 		opt.Timeout = defaultTimeout
 	}
-
 	client := resty.New()
 	client = client.SetTimeout(opt.Timeout) //timeout
 
@@ -282,14 +347,16 @@ func (s *Service) GetResult(resp *resty.Response, err error) *Reply {
 	res := &Reply{}
 	if err != nil {
 		res.Err = err
-		res.StatusCode = resp.StatusCode()
 		return res
 	}
 	res.Body = resp.Body()
-	if !resp.IsSuccess() || resp.StatusCode() != 200 {
-		res.Err = errors.New("request error: " + fmt.Sprintf("%v", resp.Error()) + "http StatusCode: " + strconv.Itoa(resp.StatusCode()) + "status: " + resp.Status())
-		res.StatusCode = resp.StatusCode()
-		return res
+	if !resp.IsSuccess() {
+		if res.AsString() == "" {
+			res.ApiResponseIsBad = true
+			res.Err = errors.New("request failed -> " + " http StatusCode: " + strconv.Itoa(resp.StatusCode()) + " message: " + resp.Status())
+			res.StatusCode = resp.StatusCode()
+			return res
+		}
 	}
 	res.StatusCode = resp.StatusCode()
 	return res
@@ -336,7 +403,7 @@ func (r *Reply) ToInterface(data interface{}) error {
 	return nil
 }
 
-// ToInterface return as body as a json
+// ToInterfaceNoErr return as body as a json
 func (r *Reply) ToInterfaceNoErr(data interface{}) {
 	if len(r.Body) > 0 {
 		json.Unmarshal(r.Body, data)

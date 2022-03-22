@@ -7,6 +7,8 @@ github.com/THREATINT/go-net v1.2.10/go.mod h1:4n3ITWyUUfaEp8JNAompTT+PuPANXL9i9T
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dspinhirne/netaddr-go v0.0.0-20211008142535-a4c5bccad224 h1:Y7k0gYiBQz/sMahnvLzM9I40UOvCeQ8WVjjsBeCtFF8=
+github.com/dspinhirne/netaddr-go v0.0.0-20211008142535-a4c5bccad224/go.mod h1:j1oDdmBtACJEAQr2T3DQNZQDfSuJzRKHadPABYd/MHo=
 github.com/go-resty/resty/v2 v2.7.0 h1:me+K9p3uhSmXtrBZ4k9jcEAfJmuC8IivWHwaLZwPrFY=
 github.com/go-resty/resty/v2 v2.7.0/go.mod h1:9PWDzw47qPphMRFfhsyk0NnSgvluHcljSMVIq3w7q0I=
 github.com/helloyi/go-sshclient v1.1.0 h1:WC1qTxUH/abkuKU5meNiFuU8rE+E8WCYmCDUAL7Ehf4=

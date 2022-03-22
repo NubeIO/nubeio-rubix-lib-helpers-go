@@ -1,8 +1,45 @@
 package types
 
 import (
+	"fmt"
+	"reflect"
 	"strconv"
 )
+
+type MapTypes struct {
+	IsArray  bool
+	IsMap    bool
+	IsString bool
+}
+
+func DetectMapTypes(str interface{}) (mapTypes MapTypes) {
+
+	isTypeInterface := false
+	// type switch with multiple cases
+	switch str.(type) {
+	case int:
+		fmt.Println("int:", str)
+	case float64:
+		fmt.Println("float64:", str)
+	case string:
+		mapTypes.IsString = true
+	case interface{}:
+		isTypeInterface = true
+	default:
+		fmt.Printf("data type: %T", str)
+	}
+
+	if isTypeInterface {
+		v := reflect.ValueOf(str)
+		switch v.Type().String() {
+		case "[]interface {}":
+			mapTypes.IsArray = true
+		case "map[string]interface {}":
+			mapTypes.IsMap = true
+		}
+	}
+	return
+}
 
 type Stringer interface {
 	String() string

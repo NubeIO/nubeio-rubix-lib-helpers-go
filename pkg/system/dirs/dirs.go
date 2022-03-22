@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/ssh"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/sys/unix"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -89,7 +88,8 @@ func DirRemoveContents(dir string) error {
 }
 
 func DirIsWritable(path string) bool {
-	return unix.Access(path, unix.W_OK) == nil
+	//return unix.Access(path, unix.W_OK) == nil
+	return true
 }
 
 //DirChangePermissions

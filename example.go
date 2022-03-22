@@ -6,8 +6,10 @@ import (
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/bugs"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nrest"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/system/networking"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/system/subnet"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/thermistor"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/uuid"
+	"net"
 	"time"
 )
 
@@ -76,21 +78,30 @@ func main() {
 	loc, _ := time.LoadLocation("America/New_York")
 	printTime(time.Now().In(loc))
 
-	//s := &nrest.Service{
-	//	BaseUri: "http://0.0.0.0:1660",
-	//}
-	//opt := &nrest.ReqOpt{
-	//	Timeout:          500 * time.Second,
-	//	RetryCount:       0,
-	//	RetryWaitTime:    0 * time.Second,
-	//	RetryMaxWaitTime: 0,
-	//	//Json:             body,
-	//}
-	//fmt.Println(s.Do("GET", "/api/points", opt).Status())
-	//fmt.Println(s.Do("GET", "/api/points", opt).AsString())
-	//
-	//rt := &nrest.ReqType{
-	//	Path: "/api/points",
-	//}
-	//fmt.Println(httpReq(rt, opt, nil).StatusCode)
+	//Or try
+	//https://github.com/brotherpowers/ipsubnet
+
+	var ip = &subnet.Subnet{}
+	err = ip.Calculate("10.0.1.8/16")
+
+	fmt.Println("SUBNET----ERROR", err)
+	fmt.Printf("CIDR: %d\n", ip.CIDR)
+	fmt.Printf("IP Address uint32: 0x%08X\n", ip.IPUINT32)
+	fmt.Printf("IP Address: %v\n", ip.IP)
+	fmt.Printf("Broadcast Address uint32: 0x%08X\n", ip.BroadcastAddressUINT32)
+	fmt.Printf("Broadcast Address: %v\n", ip.BroadcastAddress)
+	fmt.Printf("Network Address uint32: 0x%08X\n", ip.NetworkAddressUINT32)
+	fmt.Printf("Network Address: %v\n", ip.NetworkAddress)
+	fmt.Printf("Subnet Mask uint32: 0x%08X\n", ip.SubnetMaskUINT32)
+	fmt.Printf("Subnet Mask: %v\n", ip.SubnetMask)
+	fmt.Printf("Wildcard uint32: 0x%08X\n", ip.WildcardUINT32)
+	fmt.Printf("Wildcard: %v\n", ip.Wildcard)
+	fmt.Printf("Subnet Bitmap: %q\n", ip.SubnetBitmap)
+	fmt.Printf("Number of Hosts: %d\n", ip.HostsMAX)
+
+	//convert 255.255.255.0 to 24
+	mask := net.IPMask(net.ParseIP("255.255.0.0").To4()) // If you have the mask as a string
+	prefixSize, _ := mask.Size()
+	fmt.Println(prefixSize)
+
 }
