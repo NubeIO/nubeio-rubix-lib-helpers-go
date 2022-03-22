@@ -32,7 +32,7 @@ type Server struct {
 }
 
 type BacnetPoint struct {
-	AddressUUID          string    `json:"uuid,omitempty"`
+	UUID                 string    `json:"uuid,omitempty"`
 	ObjectType           string    `json:"object_type,omitempty"`
 	ObjectName           string    `json:"object_name,omitempty"`
 	Address              int       `json:"address,omitempty"`

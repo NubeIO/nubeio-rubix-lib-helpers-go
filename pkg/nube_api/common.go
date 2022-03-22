@@ -28,11 +28,11 @@ type DataType string
 const (
 	TypeObject DataType = "object"
 	TypeArray  DataType = "array"
+	TypeString DataType = "string"
 )
 
 var ObjectTypesMap = map[DataType]int8{
-	//bacnet
-	TypeObject: 0, TypeArray: 0,
+	TypeObject: 0, TypeArray: 0, TypeString: 0,
 }
 
 func checkType(t string) (DataType, error) {
@@ -58,18 +58,17 @@ message:
 -- if data is parsable but doesn’t have the message key put that content directly there
 -- if data is parsable and does have the message key, extract message key and put that message key content
 type: detect whether that output is JSON object or JSON array, if it’s JSON array, put that content on here --this will be so much easy for user to parse the content accordingly
-
-
 And just return 200 HTTP status code all the time. Coz, we are using status_code in JSON body.
 */
 type Response struct {
 	StatusCode    int         `json:"status_code"`
 	GatewayStatus bool        `json:"gateway_status"` //gateway_status: shows the connection between our rubix-service and your app is successful or not (that also means: rubix-service is up or not)? If it’s successful, then the rubix-service is up so gateway_status is true, otherwise it will be false.
-	Status        bool        `json:"status"`         //status: if it’s on the range 200-299 then status is true.
-	BodyCount     int         `json:"count"`
-	Message       interface{} `json:"message"` //"Not Found!",
-	Type          DataType    `json:"type"`    //As an array "rows": [{"name": "point1"}, {"name": "point2"}], { "name": "point1"},
-	Body          interface{} `json:"data"`    //As an object
+	ServiceStatus bool        `json:"service_status"` //will be true if the service is unreachable (as example bacnet-server)
+	BadRequest    bool        `json:"bad_request"`    //this is for if the service is online but got a 404
+	Message       interface{} `json:"message"`        //"Not Found!",
+	Type          DataType    `json:"type"`           //As an array "rows": [{"name": "point1"}, {"name": "point2"}], { "name": "point1"},
+	Body          interface{} `json:"data"`           //As an object
+
 }
 
 type RestResponse struct {
@@ -112,6 +111,8 @@ type ProxyReturn struct {
 }
 
 const (
+	BaseURL = "0.0.0.0"
+
 	DefaultPathBacnet = "api/bacnet" //main api path's
 
 	ProxyFF           = "ff" // rubix proxy path's
@@ -130,44 +131,137 @@ const (
 	DefaultRubixBios        = 1615
 )
 
+func errorIsNil(err error) (isError bool) {
+	if err != nil {
+		isError = true
+	}
+	return
+}
+
+type EmptyBody struct {
+	EmptyBody string
+}
+
 //BuildResponse formats the API response
 func (inst *NubeRest) BuildResponse(res *nrest.Reply, err error, body interface{}) (response RestResponse) {
+	statusCode := res.StatusCode
+	response.Response.StatusCode = statusCode
+	responseIsJSON := res.ApiResponseIsJSON
 	response.ApiReply = res
-	response.Response.StatusCode = res.StatusCode
-	response.Response.GatewayStatus = res.RemoteServerOffline
-	if err != nil {
-		response.Response.Status = false
-		inst.LogErr(err)
+	response.Response.ServiceStatus = true
+	response.Response.GatewayStatus = true
+	response.Response.BadRequest = true
+	if statusCode == 0 { //if status code is 0 it means that either rubix-service is down or a rubix app
+		if inst.UseRubixProxy { //this means rubix-service is down
+			response.Response.GatewayStatus = false
+			response.Response.ServiceStatus = false
+			if errorIsNil(res.Err) {
+				err = fmt.Errorf("service: rubix-service is offline")
+				response.Response.Message = err.Error()
+				if statusCode == 0 {
+					response.Response.StatusCode = 503 //Service unavailable, this would mean that the server is offline line so set status code to 503
+				}
+				return
+			}
+		} else { //this would mean the service is down (example bacnet-server)
+			if err != nil {
+				fmt.Println("ERROR----------", err.Error())
+				if strings.Contains(err.Error(), "NOT FOUND") || strings.Contains(err.Error(), "connect: connection refused") {
+					response.Response.ServiceStatus = false
+					err = fmt.Errorf("service: %s is offline", inst.Rest.Service)
+					response.Response.Message = err.Error()
+					if statusCode == 0 {
+						response.Response.StatusCode = 503 //Service unavailable, this would mean that the server is offline line so set status code to 503
+					}
+					return
+				}
+			}
+		}
+	}
+
+	if nrest.StatusCode3xx(statusCode) || nrest.StatusCode4xx(statusCode) || nrest.StatusCode5xx(statusCode) {
+		if statusCode == 404 { //404 this would mean an incorrect path
+			if inst.UseRubixProxy {
+				if err != nil {
+					if strings.Contains(err.Error(), "NOT FOUND") { //as example bacnet-server is down, this is what rubix service would return
+						response.Response.ServiceStatus = false
+						err = fmt.Errorf("service: %s is offline", inst.Rest.Service)
+						response.Response.Message = err.Error()
+						return
+					}
+				} else if strings.Contains(res.AsString(), "<h1>Not Found</h1>") { //this is what rubix service would return
+					response.Response.ServiceStatus = false
+					err = fmt.Errorf("service: %s is offline", inst.Rest.Service)
+					response.Response.Message = err.Error()
+					return
+				}
+
+			} else {
+				if strings.Contains(res.AsString(), "<h1>Not Found</h1>") { //this is what rubix service would return
+					response.Response.ServiceStatus = false
+					err = fmt.Errorf("service: %s bad path", inst.Rest.Service)
+					response.Response.Message = err.Error()
+					return
+				}
+			}
+		}
+		if responseIsJSON {
+			response.Response.Message = res.AsJsonNoErr()
+		} else {
+			if err != nil {
+				err = fmt.Errorf("service: %s error:%w", inst.Rest.Service, err)
+				response.Response.Message = err.Error()
+			} else {
+				err = fmt.Errorf("service: %s unknow error", inst.Rest.Service)
+				response.Response.Message = err
+			}
+		}
+		return
+
 	}
 
 	getType := types.DetectMapTypes(res.AsJsonNoErr())
-	fmt.Println("ApiResponseIsBad", res.ApiResponseIsBad)
-	fmt.Println("er", err)
-	fmt.Println("res.StatusCode", res.StatusCode)
-
+	if statusCode == 0 {
+		statusCode = 503 //Service unavailable, this would mean that the server is offline line so set status code to 503
+	}
 	if res.ApiResponseIsBad {
-		response.Response.Status = true
-		response.Response.Message = err.Error()
+		if err != nil {
+			response.Response.Message = err.Error()
+		}
 		if res.ApiResponseIsJSON { //if response is json then pass on the body response
 			response.Response.Message = response.ApiReply.AsJsonNoErr()
 		}
-	}
-
-	if !res.ApiResponseIsBad {
+	} else {
 		err = res.ToInterface(&body)
-		if err != nil {
-			response.Response.Status = false
-			inst.LogErr(err)
-		} else {
-			if getType.IsArray {
-				response.Response.Type = TypeArray
-				response.Response.Body = response.ApiReply.AsJsonNoErr()
-			} else if getType.IsMap {
-				response.Response.Type = TypeObject
-				response.Response.BodyCount = response.ApiReply.ApiResponseLength
-				response.Response.Body = response.ApiReply.AsJsonNoErr()
-			}
+		noBody := EmptyBody{
+			EmptyBody: "no content",
 		}
+		if getType.IsArray {
+			response.Response.Type = TypeArray
+			response.Response.Body = response.ApiReply.AsJsonNoErr()
+		} else if getType.IsMap {
+			response.Response.Type = TypeObject
+			response.Response.Body = response.ApiReply.AsJsonNoErr()
+		} else if getType.IsString {
+			response.Response.Type = TypeString
+			response.Response.Message = response.ApiReply.AsJsonNoErr()
+		} else if res.AsString() == "" {
+			response.Response.Type = TypeString
+			response.Response.Message = noBody
+		} else {
+			response.Response.Type = TypeString
+			response.Response.Message = noBody
+		}
+
+	}
+	response.Response.BadRequest = false
+	if err != nil {
+		response.Response.Message = err.Error()
+	}
+	if statusCode == 204 { //some app's return this when deleting, and it will not return our body so change to 200
+		response.Response.StatusCode = 200
+	} else {
+		response.Response.StatusCode = statusCode
 	}
 	return
 }

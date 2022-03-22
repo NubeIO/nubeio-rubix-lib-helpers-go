@@ -7,8 +7,9 @@ import (
 )
 
 type MapTypes struct {
-	IsArray bool
-	IsMap   bool
+	IsArray  bool
+	IsMap    bool
+	IsString bool
 }
 
 func DetectMapTypes(str interface{}) (mapTypes MapTypes) {
@@ -21,7 +22,7 @@ func DetectMapTypes(str interface{}) (mapTypes MapTypes) {
 	case float64:
 		fmt.Println("float64:", str)
 	case string:
-		fmt.Println("string:", str)
+		mapTypes.IsString = true
 	case interface{}:
 		isTypeInterface = true
 	default:

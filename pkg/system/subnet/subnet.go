@@ -1,4 +1,4 @@
-package checksubnet
+package subnet
 
 import (
 	"fmt"

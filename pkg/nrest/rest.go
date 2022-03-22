@@ -57,15 +57,14 @@ type ReqOpt struct {
 }
 
 type Reply struct {
-	RemoteServerOffline bool //is true if failed to reach remote server
-	IsError             bool
-	Err                 error
-	Body                []byte
-	BodyJson            interface{}
-	StatusCode          int
-	ApiResponseIsBad    bool //is true response is a 404
-	ApiResponseIsJSON   bool
-	ApiResponseLength   int
+	IsError           bool
+	Err               error
+	Body              []byte
+	BodyJson          interface{}
+	StatusCode        int
+	ApiResponseIsBad  bool //is true response is a 404
+	ApiResponseIsJSON bool
+	ApiResponseLength int
 }
 
 type ApiStdRes struct {
@@ -87,6 +86,7 @@ type ReqType struct {
 	Path    string //  /api/points
 	Method  string
 	Debug   bool
+	Service string //as in bacnet-server
 	LogPath string //in the log message show path or extra message
 	LogFunc string
 }
@@ -116,6 +116,26 @@ func getJSONLen(str interface{}) (length int) {
 	return
 }
 
+// StatusCode2xx method returns true if HTTP status `code >= 200 and <= 299` otherwise false.
+func StatusCode2xx(statusCode int) bool {
+	return statusCode > 199 && statusCode < 300
+}
+
+// StatusCode3xx method returns true if HTTP status `code >= 299 and <= 399` otherwise false.
+func StatusCode3xx(statusCode int) bool {
+	return statusCode > 299 && statusCode < 399
+}
+
+// StatusCode4xx method returns true if HTTP status `code >= 399 and <= 499` otherwise false.
+func StatusCode4xx(statusCode int) bool {
+	return statusCode > 399 && statusCode < 499
+}
+
+// StatusCode5xx method returns true if HTTP status `code >= 499 and <= 599` otherwise false.
+func StatusCode5xx(statusCode int) bool {
+	return statusCode > 499 && statusCode < 599
+}
+
 func DoHTTPReq(r *ReqType, opt *ReqOpt) (response *Reply, statusCode int, err error) {
 	host := fmt.Sprintf("http://%s:%d", r.BaseUri, r.Port)
 	if r.HTTPS {
@@ -132,16 +152,13 @@ func DoHTTPReq(r *ReqType, opt *ReqOpt) (response *Reply, statusCode int, err er
 	}
 	response = s.Do(r.Method, r.Path, opt)
 	statusCode = response.StatusCode
-	if statusCode == 0 {
-		response.ApiResponseIsBad = true
-		response.StatusCode = 503 //Service unavailable
-	}
 	logPath := fmt.Sprintf("%s.%s() method: %s host: %s statusCode:%d", r.LogPath, r.LogFunc, strings.ToUpper(r.Method), host+r.Path, statusCode)
 	if response.ApiResponseIsBad {
 		log.Errorln(logPath)
 	} else {
 		log.Println(logPath)
 	}
+	fmt.Println(" response.Err", response.Err)
 	err = response.Err
 	//check if response is JSON
 	isJson := isJSON(response.AsString())
@@ -330,15 +347,16 @@ func (s *Service) GetResult(resp *resty.Response, err error) *Reply {
 	res := &Reply{}
 	if err != nil {
 		res.Err = err
-		res.RemoteServerOffline = true
 		return res
 	}
 	res.Body = resp.Body()
-	if !resp.IsSuccess() || resp.StatusCode() != 200 {
-		res.ApiResponseIsBad = true
-		res.Err = errors.New("request failed -> " + " http StatusCode: " + strconv.Itoa(resp.StatusCode()) + " message: " + resp.Status())
-		res.StatusCode = resp.StatusCode()
-		return res
+	if !resp.IsSuccess() {
+		if res.AsString() == "" {
+			res.ApiResponseIsBad = true
+			res.Err = errors.New("request failed -> " + " http StatusCode: " + strconv.Itoa(resp.StatusCode()) + " message: " + resp.Status())
+			res.StatusCode = resp.StatusCode()
+			return res
+		}
 	}
 	res.StatusCode = resp.StatusCode()
 	return res
