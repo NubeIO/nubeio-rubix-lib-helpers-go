@@ -7,6 +7,7 @@ import (
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/types"
 	log "github.com/sirupsen/logrus"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
@@ -29,6 +30,8 @@ const (
 	TypeObject DataType = "object"
 	TypeArray  DataType = "array"
 	TypeString DataType = "string"
+	TypeError  DataType = "error"
+	TypeNull   DataType = "null"
 )
 
 var ObjectTypesMap = map[DataType]int8{
@@ -66,13 +69,13 @@ type Response struct {
 	ServiceStatus bool        `json:"service_status"` //will be true if the service is unreachable (as example bacnet-server)
 	BadRequest    bool        `json:"bad_request"`    //this is for if the service is online but got a 404
 	Message       interface{} `json:"message"`        //"Not Found!",
-	Type          DataType    `json:"type"`           //As an array "rows": [{"name": "point1"}, {"name": "point2"}], { "name": "point1"},
+	BodyType      DataType    `json:"body_type"`      //As an array "rows": [{"name": "point1"}, {"name": "point2"}], { "name": "point1"},
 	Body          interface{} `json:"data"`           //As an object
 
 }
 
 type RestResponse struct {
-	ApiReply *nrest.Reply
+	//ApiReply *nrest.Reply
 	Response Response
 }
 
@@ -131,15 +134,15 @@ const (
 	DefaultRubixBios        = 1615
 )
 
-func errorIsNil(err error) (isError bool) {
-	if err != nil {
-		isError = true
-	}
-	return
+type EmptyBody struct {
+	EmptyBody string `json:"empty_body"`
 }
 
-type EmptyBody struct {
-	EmptyBody string
+func failedBodyMessages(bodyError string) (found bool) {
+	re := regexp.MustCompile(`HTML|NOT FOUND|connect: connection refused`)
+	found = re.MatchString(bodyError)
+	return
+
 }
 
 //BuildResponse formats the API response
@@ -147,117 +150,81 @@ func (inst *NubeRest) BuildResponse(res *nrest.Reply, err error, body interface{
 	statusCode := res.StatusCode
 	response.Response.StatusCode = statusCode
 	responseIsJSON := res.ApiResponseIsJSON
-	response.ApiReply = res
 	response.Response.ServiceStatus = true
 	response.Response.GatewayStatus = true
 	response.Response.BadRequest = true
-	if statusCode == 0 { //if status code is 0 it means that either rubix-service is down or a rubix app
-		if inst.UseRubixProxy { //this means rubix-service is down
+	if statusCode == 0 || nrest.StatusCodesAllBad(statusCode) { //if status code is 0 it means that either rubix-service is down or a rubix app
+		if statusCode == 0 {
+			response.Response.StatusCode = 503
 			response.Response.GatewayStatus = false
 			response.Response.ServiceStatus = false
-			if errorIsNil(res.Err) {
-				err = fmt.Errorf("service: rubix-service is offline")
+		}
+		if inst.UseRubixProxy {
+			if responseIsJSON {
+				response.Response.ServiceStatus = false
+				response.Response.Message = res.AsJsonNoErr()
+				return
+			} else if statusCode == 0 {
+				err = fmt.Errorf("rubix-service is offline")
 				response.Response.Message = err.Error()
-				if statusCode == 0 {
-					response.Response.StatusCode = 503 //Service unavailable, this would mean that the server is offline line so set status code to 503
-				}
 				return
 			}
-		} else { //this would mean the service is down (example bacnet-server)
-			if err != nil {
-				fmt.Println("ERROR----------", err.Error())
-				if strings.Contains(err.Error(), "NOT FOUND") || strings.Contains(err.Error(), "connect: connection refused") {
-					response.Response.ServiceStatus = false
-					err = fmt.Errorf("service: %s is offline", inst.Rest.Service)
-					response.Response.Message = err.Error()
-					if statusCode == 0 {
-						response.Response.StatusCode = 503 //Service unavailable, this would mean that the server is offline line so set status code to 503
-					}
-					return
-				}
-			}
+
 		}
-	}
-
-	if nrest.StatusCode3xx(statusCode) || nrest.StatusCode4xx(statusCode) || nrest.StatusCode5xx(statusCode) {
-		if statusCode == 404 { //404 this would mean an incorrect path
-			if inst.UseRubixProxy {
-				if err != nil {
-					if strings.Contains(err.Error(), "NOT FOUND") { //as example bacnet-server is down, this is what rubix service would return
-						response.Response.ServiceStatus = false
-						err = fmt.Errorf("service: %s is offline", inst.Rest.Service)
-						response.Response.Message = err.Error()
-						return
-					}
-				} else if strings.Contains(res.AsString(), "<h1>Not Found</h1>") { //this is what rubix service would return
-					response.Response.ServiceStatus = false
-					err = fmt.Errorf("service: %s is offline", inst.Rest.Service)
-					response.Response.Message = err.Error()
-					return
-				}
-
-			} else {
-				if strings.Contains(res.AsString(), "<h1>Not Found</h1>") { //this is what rubix service would return
-					response.Response.ServiceStatus = false
-					err = fmt.Errorf("service: %s bad path", inst.Rest.Service)
-					response.Response.Message = err.Error()
-					return
-				}
-			}
-		}
-		if responseIsJSON {
-			response.Response.Message = res.AsJsonNoErr()
-		} else {
-			if err != nil {
-				err = fmt.Errorf("service: %s error:%w", inst.Rest.Service, err)
-				response.Response.Message = err.Error()
-			} else {
-				err = fmt.Errorf("service: %s unknow error", inst.Rest.Service)
-				response.Response.Message = err
-			}
-		}
-		return
-
-	}
-
-	getType := types.DetectMapTypes(res.AsJsonNoErr())
-	if statusCode == 0 {
-		statusCode = 503 //Service unavailable, this would mean that the server is offline line so set status code to 503
-	}
-	if res.ApiResponseIsBad {
+		response.Response.BodyType = TypeError
+		bodyError := ""
 		if err != nil {
-			response.Response.Message = err.Error()
-		}
-		if res.ApiResponseIsJSON { //if response is json then pass on the body response
-			response.Response.Message = response.ApiReply.AsJsonNoErr()
-		}
-	} else {
-		err = res.ToInterface(&body)
-		noBody := EmptyBody{
-			EmptyBody: "no content",
-		}
-		if getType.IsArray {
-			response.Response.Type = TypeArray
-			response.Response.Body = response.ApiReply.AsJsonNoErr()
-		} else if getType.IsMap {
-			response.Response.Type = TypeObject
-			response.Response.Body = response.ApiReply.AsJsonNoErr()
-		} else if getType.IsString {
-			response.Response.Type = TypeString
-			response.Response.Message = response.ApiReply.AsJsonNoErr()
-		} else if res.AsString() == "" {
-			response.Response.Type = TypeString
-			response.Response.Message = noBody
+			bodyError = err.Error()
 		} else {
-			response.Response.Type = TypeString
-			response.Response.Message = noBody
+			bodyError = res.AsString()
 		}
 
+		if failedBodyMessages(bodyError) {
+			if statusCode == 0 { //bacnet-service is offline
+				response.Response.ServiceStatus = false
+				err = fmt.Errorf("service: %s is offline", inst.Rest.Service)
+				response.Response.Message = err.Error()
+			} else { //bacnet-service is online but bad req
+				response.Response.ServiceStatus = true
+				err = fmt.Errorf("service: %s bad request", inst.Rest.Service)
+				response.Response.Message = err.Error()
+			}
+			return
+		} else {
+			response.Response.ServiceStatus = false
+			if responseIsJSON {
+				response.Response.Message = res.AsJsonNoErr()
+			} else if bodyError != "" {
+				response.Response.Message = bodyError
+			} else {
+				err = fmt.Errorf("service: %s is offline or bad request", inst.Rest.Service)
+				response.Response.Message = err.Error()
+			}
+			return
+		}
+	}
+	getType := types.DetectMapTypes(res.AsJsonNoErr())
+	err = res.ToInterface(&body)
+	noBody := EmptyBody{
+		EmptyBody: "no content",
+	}
+	if getType.IsArray {
+		response.Response.BodyType = TypeArray
+		response.Response.Body = res.AsJsonNoErr()
+	} else if getType.IsMap {
+		response.Response.BodyType = TypeObject
+		response.Response.Body = res.AsJsonNoErr()
+	} else if getType.IsString {
+		response.Response.BodyType = TypeString
+		response.Response.Message = res.AsJsonNoErr()
+	} else if res.AsString() == "" {
+		response.Response.BodyType = TypeString
+		response.Response.Message = noBody
+	} else {
+		response.Response.BodyType = TypeString
+		response.Response.Message = noBody
 	}
 	response.Response.BadRequest = false
-	if err != nil {
-		response.Response.Message = err.Error()
-	}
 	if statusCode == 204 { //some app's return this when deleting, and it will not return our body so change to 200
 		response.Response.StatusCode = 200
 	} else {
@@ -303,7 +270,8 @@ func (inst *NubeRest) GetToken() (proxyReturn ProxyReturn) {
 		inst.Rest.Port = inst.RubixPort
 		inst.Rest.Path = "/api/users/login"
 		inst.Rest.Method = nrest.POST
-		response, statusCode, err := nrest.DoHTTPReq(inst.Rest, options)
+		response := nrest.DoHTTPReq(inst.Rest, options)
+		statusCode := response.StatusCode
 		res := new(TokenResponse)
 		err = response.ToInterface(&res)
 		if err != nil || statusCode != 200 || res.AccessToken == "" {

@@ -77,6 +77,8 @@ type Service struct {
 	BaseUri         string //0.0.0.0 or nube-io.com
 	Proxy           string
 	EnableKeepAlive bool
+	ReqType         *ReqType
+	ReqOpt          *ReqOpt
 }
 
 type ReqType struct {
@@ -136,7 +138,21 @@ func StatusCode5xx(statusCode int) bool {
 	return statusCode > 499 && statusCode < 599
 }
 
-func DoHTTPReq(r *ReqType, opt *ReqOpt) (response *Reply, statusCode int, err error) {
+// StatusCodesAllBad any status for 3xx, 4xx and 5xx
+func StatusCodesAllBad(statusCode int) (ok bool) {
+	if StatusCode3xx(statusCode) {
+		ok = true
+	}
+	if StatusCode4xx(statusCode) {
+		ok = true
+	}
+	if StatusCode5xx(statusCode) {
+		ok = true
+	}
+	return
+}
+
+func DoHTTPReq(r *ReqType, opt *ReqOpt) (response *Reply) {
 	host := fmt.Sprintf("http://%s:%d", r.BaseUri, r.Port)
 	if r.HTTPS {
 		host = fmt.Sprintf("https://%s:%d", r.BaseUri, r.Port)
@@ -151,15 +167,13 @@ func DoHTTPReq(r *ReqType, opt *ReqOpt) (response *Reply, statusCode int, err er
 		r.LogPath = "nube.helpers.nrest"
 	}
 	response = s.Do(r.Method, r.Path, opt)
-	statusCode = response.StatusCode
+	statusCode := response.StatusCode
 	logPath := fmt.Sprintf("%s.%s() method: %s host: %s statusCode:%d", r.LogPath, r.LogFunc, strings.ToUpper(r.Method), host+r.Path, statusCode)
 	if response.ApiResponseIsBad {
 		log.Errorln(logPath)
 	} else {
 		log.Println(logPath)
 	}
-	fmt.Println(" response.Err", response.Err)
-	err = response.Err
 	//check if response is JSON
 	isJson := isJSON(response.AsString())
 	if isJson {
@@ -171,10 +185,8 @@ func DoHTTPReq(r *ReqType, opt *ReqOpt) (response *Reply, statusCode int, err er
 		} else {
 			response.ApiResponseLength = 1
 		}
-
 	}
-
-	return response, statusCode, err
+	return response
 }
 
 func (ReqOpt) ParseData(d map[string]interface{}) map[string]string {

@@ -13,7 +13,7 @@ func TestPortScanner(t *testing.T) {
 	ipsSequence := []string{"192.168.15.1-254"}
 
 	// results returns a map with open ports for each IP address.
-	results := IPScanner(ipsSequence, ports, false)
+	results := IPScanner(ipsSequence, ports, true)
 	fmt.Println("-------------HOSTS------------------")
 	fmt.Println(results)
 	fmt.Println("-------------HOSTS------------------")
