@@ -3,7 +3,7 @@ package ufw
 import (
 	"errors"
 	"fmt"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/ssh"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/networking/ssh"
 	log "github.com/sirupsen/logrus"
 	"strings"
 )

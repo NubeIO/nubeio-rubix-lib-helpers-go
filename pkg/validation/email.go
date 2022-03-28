@@ -20,7 +20,7 @@ import (
 func IsEmail(address string) (bool, error) {
 	_, err := emailaddress.Parse(address)
 	if err != nil {
-		return false, errors.New("invalid subnet address, 255.255.255.0")
+		return false, errors.New("invalid email address")
 	}
 	return true, nil
 }

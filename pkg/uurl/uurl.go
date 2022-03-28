@@ -8,28 +8,29 @@ import (
 	"strings"
 )
 
+func JoinIpPort(url string, port int) (out string, err error) {
+	return fmt.Sprintf("%s:%d", url, port), nil
+}
+
 type URLParts struct {
 	Transport string //tcp
 	Host      string
 	Port      string
 }
 
-func JoinIpPort(url string, port int) (out string, err error) {
-	return fmt.Sprintf("%s:%d", url, port), nil
-}
-
-func SplitURL(url string) URLParts {
-	var o URLParts
+func SplitURL(url string) (out URLParts) {
 	u := strings.SplitN(url, "://", 2)
 	host := ""
 	if len(u) == 2 {
-		o.Transport = u[0]
+		out.Transport = u[0]
 		host = u[1]
 	}
 	p := strings.Split(host, ":")
-	o.Host = p[0]
-	o.Port = p[1]
-	return o
+	if len(p) >= 1 {
+		out.Host = p[0]
+		out.Port = p[1]
+	}
+	return
 }
 
 func IsTCP(target string) bool {
