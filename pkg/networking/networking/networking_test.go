@@ -17,13 +17,17 @@ func TestNetworking(*testing.T) {
 	pprint.PrintStrut(err)
 	pprint.PrintStrut(getIP)
 
-	names, err := nets.GetSubnetCIDR(nic)
+	names, err := nets.GetNetworksThatHaveGateway()
 	if err != nil {
 		return
 	}
 
-	pprint.PrintStrut(err)
-	fmt.Println(names, 9999)
+	for _, net := range names {
+		fmt.Println(net.Interface)
+	}
+
+	pprint.PrintStrut(names)
+	//fmt.Println(names)
 	//
 	//names, err := n.GetValidNetInterfacesForWeb()
 	//if err != nil {

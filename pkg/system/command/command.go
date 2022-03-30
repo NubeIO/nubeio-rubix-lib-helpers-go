@@ -11,7 +11,7 @@ func Run(cmdAndParams ...string) (string, error) {
 	if len(cmdAndParams) <= 0 {
 		return "", fmt.Errorf("no command provided")
 	}
-
+	fmt.Println(exec.Command(cmdAndParams[0], cmdAndParams[1:]...).String())
 	output, err := exec.Command(cmdAndParams[0], cmdAndParams[1:]...).CombinedOutput()
 	return strings.TrimRight(string(output), "\n"), err
 }
@@ -27,7 +27,7 @@ func SudoRun(cmdAndParams ...string) (string, error) {
 
 func RunCMD(sh string, debug bool) ([]byte, error) {
 	cmd := exec.Command("bash", "-c", sh)
-	res, e := cmd.Output()
+	res, e := cmd.CombinedOutput()
 	if debug {
 		fmt.Printf("[admin debug] %s\n", cmd.String())
 	}

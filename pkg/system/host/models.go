@@ -2,7 +2,7 @@ package host
 
 import (
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/arr"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/system/admin"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/remote_admin/admin"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/times/utilstime"
 )
 

@@ -90,6 +90,22 @@ func ParseIPSequence(ipSequence string) []IPv4 {
 	return arrayIps
 }
 
+//GetIpList  ipsSequence := []string{"192.168.15.1-2"}  => [[192 168 15 1] [192 168 15 2]]
+func GetIpList(ips []string) []IPv4 {
+	var ipList []IPv4
+	for _, i := range ips {
+		if strings.Contains(i, "-") {
+			ipList = append(ipList, ParseIPSequence(i)...)
+		} else {
+			ip := ToIPv4(i)
+			if ip.IsValid() {
+				ipList = append(ipList, ip)
+			}
+		}
+	}
+	return ipList
+}
+
 // GetIPSubnet GetIPSubnet("192.168.15.1", "255.255.255.0")  =>  192.168.15.0/24 <nil>
 func GetIPSubnet(ip, netmask string) (ipPrefix, prefix string, err error) {
 	// Check ip

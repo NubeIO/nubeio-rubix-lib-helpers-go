@@ -47,7 +47,7 @@ func (e Entry) String() string {
 // JournalCTL interacts with the native journalctl installation to pull
 // logs from the systemd-journald
 type JournalCTL interface {
-	// LastEntry Entries returns the last Entry22 in the journal. If there is no entries
+	// LastEntry Entries returns the last Entry in the journal. If there is no entries
 	// an empty Entry22 will be returned
 	LastEntry(unit string) (*Entry, error)
 

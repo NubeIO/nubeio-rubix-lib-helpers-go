@@ -1,6 +1,7 @@
 package portscanner
 
 import (
+	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/networking/ip_helpers"
 
 	log "github.com/sirupsen/logrus"
@@ -47,6 +48,7 @@ func IPScanner(ips []string, portStr []string, printResults bool) (hostsFound Ho
 		for _, i := range ips {
 			if strings.Contains(i, "-") {
 				ipList = append(ipList, ip_helpers.ParseIPSequence(i)...)
+				fmt.Println(ipList)
 			} else {
 				ip := ip_helpers.ToIPv4(i)
 				if ip.IsValid() {
@@ -113,7 +115,7 @@ func PortScanner(ip ip_helpers.IPv4, portList []string) []string {
 	for _, port := range portList {
 		conn, err := net.DialTimeout("tcp",
 			ip.ToString()+":"+port,
-			100*time.Millisecond)
+			300*time.Millisecond)
 		if err == nil {
 			conn.Close()
 			open = append(open, port)
