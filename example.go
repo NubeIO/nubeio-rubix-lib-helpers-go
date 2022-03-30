@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/bools"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/bugs"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/networking/networking"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/networking/subnet"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nrest"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube/api/nrest"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube/thermistor"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/uuid"
 	"net"
@@ -65,12 +64,6 @@ func main() {
 	fmt.Println("1000 Ohm from T3_10K Thermistor = ", result)
 	result, err = thermistor.ResistanceToTemperature(87, thermistor.PT100)
 	fmt.Println("87 Ohm from PT100 Thermistor = ", result)
-
-	_net, err := networking.GetInterfaceByName("wlp3s0")
-	if err != nil {
-		//return
-	}
-	fmt.Println(_net.Interface, _net.Gateway, _net.MacAddress)
 
 	printTime(time.Now())
 	printTime(time.Now().UTC())
