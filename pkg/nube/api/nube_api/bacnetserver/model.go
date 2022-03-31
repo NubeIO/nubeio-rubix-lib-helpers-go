@@ -1,4 +1,4 @@
-package nube_api_bacnetserver
+package rest_bacnet
 
 type ServerPing struct {
 	Version        string `json:"version"`

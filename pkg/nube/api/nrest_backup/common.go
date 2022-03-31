@@ -213,24 +213,13 @@ func (inst *NubeRest) BuildResponse(res *rest.Reply, body interface{}) *RestResp
 	return response
 }
 
-//func FixPath2(appName, RestPath string) (path string) {
-//	proxyBacnet := nube_apps.Services.BacnetServer.Proxy
-//	proxyFF := nube_apps.Services.FlowFramework.Proxy
-//	if appName == proxyFF { //api/bacnet/points
-//		path = fmt.Sprintf("/%s%s", proxyFF, RestPath)
-//	} else if appName == proxyBacnet {
-//		path = fmt.Sprintf("/%s%s", proxyBacnet, RestPath)
-//	}
-//
-//	return
-//}
-
 //FixPath will change the nube proxy and the service port ie: from bacnet 1717 to rubix-service port 1616
 func (inst *NubeRest) FixPath() *NubeRest {
 	proxyName := inst.RubixProxyPath
 	proxyBacnet := nube_apps.Services.BacnetServer.Proxy
 	proxyFF := nube_apps.Services.FlowFramework.Proxy
 	if inst.UseRubixProxy {
+		inst.Rest.Port = inst.RubixPort
 		if proxyName == proxyFF { //api/bacnet/points
 			inst.Rest.Path = fmt.Sprintf("/%s%s", proxyFF, inst.Rest.Path)
 		} else if proxyName == proxyBacnet {
