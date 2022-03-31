@@ -22,14 +22,6 @@ var Paths = struct {
 	Points: Path{Name: "/api/bacnet/points"},
 }
 
-//type NewClient struct {
-//	Url      string
-//	Port     int
-//	NubeRest *nube_api.NubeRest
-//}
-
-//var client *RestClient
-
 // New returns a new instance of the nube common apis
 func New(inst *BacnetClient) *BacnetClient {
 

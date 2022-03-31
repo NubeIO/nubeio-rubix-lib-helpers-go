@@ -76,16 +76,17 @@ type RestResponse struct {
 
 // New returns a new instance of the nube common apis
 func New(nubeRest *NubeRest) *NubeRest {
+	fmt.Println("nubeRest", nubeRest.UseRubixProxy)
+	//nubeRest = &NubeRest{}
 	if nubeRest.UseRubixProxy {
 		if nubeRest.RubixPort == 0 {
 			nubeRest.RubixPort = nube_apps.Services.RubixService.Port
 		}
 		if nubeRest.RubixProxyPath == "" {
 			nubeRest.Error = errors.New("proxy path must not be empty")
-			return nil
+			//return nil
 		}
 	}
-
 	return nubeRest
 }
 

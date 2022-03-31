@@ -6,9 +6,13 @@ import (
 )
 
 func TestBACnetRest(*testing.T) {
-
-	commonClient := &nube_api.NubeRest{UseRubixProxy: false}
+	commonClient := &nube_api.NubeRest{UseRubixProxy: true}
+	//commonClient := new(nube_api.NubeRest)
+	//commonClient.UseRubixProxy = true
+	commonClient = nube_api.New(commonClient)
+	//
 	newReq := New(&BacnetClient{"", 0, commonClient})
+
 	newReq.Ping()
 
 }
