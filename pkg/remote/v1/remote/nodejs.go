@@ -1,4 +1,4 @@
-package admin
+package remote
 
 import (
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/str"

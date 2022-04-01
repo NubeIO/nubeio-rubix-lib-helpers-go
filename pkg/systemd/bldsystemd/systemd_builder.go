@@ -1,4 +1,4 @@
-package systemd_builder
+package bldsystemd
 
 import (
 	"fmt"

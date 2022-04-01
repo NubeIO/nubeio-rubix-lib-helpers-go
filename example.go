@@ -5,7 +5,6 @@ import (
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/bools"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/bugs"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/networking/subnet"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube/api/nrest"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube/thermistor"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/uuid"
 	"net"
@@ -17,24 +16,6 @@ type T struct {
 	Database string `json:"database"`
 }
 
-func httpReq(r *nrest.ReqType, opt *nrest.ReqOpt, body interface{}) *nrest.Reply {
-	_ip := fmt.Sprintf("http://%s:%s", "0.0.0.0", "1660")
-	s := &nrest.Service{
-		BaseUri: _ip,
-	}
-	opt = &nrest.ReqOpt{
-		Timeout:          500 * time.Second,
-		RetryCount:       0,
-		RetryWaitTime:    0 * time.Second,
-		RetryMaxWaitTime: 0,
-		Json:             body,
-	}
-
-	if r.Method == "" {
-		r.Method = nrest.GET
-	}
-	return s.Do(r.Method, r.Path, opt)
-}
 func printTime(t time.Time) {
 	zone, offset := t.Zone()
 	fmt.Println(t.Format(time.Kitchen), "Zone:", zone, "Offset UTC:", offset)

@@ -1,21 +1,19 @@
-package nube_api
+package iorest
 
 import (
 	"errors"
 	"fmt"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube/api/nrest"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube/nube_apps"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube/nube"
+	pprint "github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/print"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/rest/v1/rest"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/types"
 	log "github.com/sirupsen/logrus"
-	"reflect"
 	"regexp"
-	"runtime"
-	"strings"
 	"time"
 )
 
 type NubeRest struct {
-	Rest                 *nrest.ReqType
+	RubixApp             nube.Service
 	UseRubixProxy        bool   //if true then use rubix-service proxy
 	RubixProxyPath       string //the proxy path is what is used in rubix-service to append the url path ps, lora, bacnet
 	RubixPort            int
@@ -23,6 +21,8 @@ type NubeRest struct {
 	RubixTokenLastUpdate time.Time
 	RubixUsername        string
 	RubixPassword        string
+	Error                error
+	Rest                 *rest.Service
 }
 
 type DataType string
@@ -51,7 +51,7 @@ func checkType(t string) (DataType, error) {
 }
 
 /*
-Response
+RestResponse
 status_code: proxy that status code --catch it and send it here
 gateway_status: shows the connection between our rubix-service and your app is successful or not (that also means: rubix-service is up or not)? If it’s successful, then the rubix-service is up so gateway_status is true, otherwise it will be false.
 status: if it’s on the range 200-299 then status is true.
@@ -64,7 +64,7 @@ message:
 type: detect whether that output is JSON object or JSON array, if it’s JSON array, put that content on here --this will be so much easy for user to parse the content accordingly
 And just return 200 HTTP status code all the time. Coz, we are using status_code in JSON body.
 */
-type Response struct {
+type RestResponse struct {
 	StatusCode    int         `json:"status_code"`
 	GatewayStatus bool        `json:"gateway_status"` //gateway_status: shows the connection between our rubix-service and your app is successful or not (that also means: rubix-service is up or not)? If it’s successful, then the rubix-service is up so gateway_status is true, otherwise it will be false.
 	ServiceStatus bool        `json:"service_status"` //will be true if the service is unreachable (as example bacnet-server)
@@ -72,30 +72,21 @@ type Response struct {
 	Message       interface{} `json:"message"`        //"Not Found!",
 	BodyType      DataType    `json:"body_type"`      //As an array "rows": [{"name": "point1"}, {"name": "point2"}], { "name": "point1"},
 	Body          interface{} `json:"data"`           //As an object
-
-}
-
-type RestResponse struct {
-	//ApiReply *nrest.Reply
-	Response Response
-}
-
-func tokenTimeDiffMin(t time.Time, timeDiff float64) (out bool) {
-	t1 := time.Now()
-	if t1.Sub(t).Minutes() > timeDiff {
-		out = true
-	}
-	return
-}
-
-func GetFunctionName(temp interface{}) string {
-	s := strings.Split(runtime.FuncForPC(reflect.ValueOf(temp).Pointer()).Name(), ".")
-	return s[len(s)-1]
+	err           error
 }
 
 // New returns a new instance of the nube common apis
-func New(RestClient *NubeRest) *NubeRest {
-	return RestClient
+func New(nubeRest *NubeRest) *NubeRest {
+	if nubeRest.UseRubixProxy {
+		if nubeRest.RubixPort == 0 {
+			nubeRest.RubixPort = nube.Services.RubixService.Port
+		}
+		if nubeRest.RubixProxyPath == "" {
+			nubeRest.Error = errors.New("proxy path must not be empty")
+			//return nil
+		}
+	}
+	return nubeRest
 }
 
 type TokenBody struct {
@@ -108,18 +99,9 @@ type TokenResponse struct {
 	Message     *string `json:"message,omitempty"`
 }
 
-var err error
-
 type ProxyReturn struct {
 	Token string
 }
-
-const (
-	BaseURL = "0.0.0.0"
-
-	DefaultPathBacnet = "api/bacnet" //main api path's
-
-)
 
 type EmptyBody struct {
 	EmptyBody string `json:"empty_body"`
@@ -132,33 +114,59 @@ func failedBodyMessages(bodyError string) (found bool) {
 
 }
 
+func (res *RestResponse) Log() {
+
+	if res.BadRequest {
+		log.Errorln(res.Message)
+		log.Errorln(res.StatusCode)
+	} else {
+		pprint.PrintStrut(res.Body)
+		log.Println(res.StatusCode)
+	}
+
+}
+
+func (res *RestResponse) GetResponse() *RestResponse {
+	return res
+}
+
+func (res *RestResponse) GetError() error {
+	return res.err
+}
+
+func (res *RestResponse) GetStatusCode() int {
+	return res.StatusCode
+}
+
 //BuildResponse formats the API response
-func (inst *NubeRest) BuildResponse(res *nrest.Reply, err error, body interface{}) (response RestResponse) {
-	statusCode := res.StatusCode
-	response.Response.StatusCode = statusCode
+func (inst *NubeRest) BuildResponse(res *rest.Reply, body interface{}) *RestResponse {
+	statusCode := res.Status()
+	err := res.Error()
+	response := &RestResponse{}
+	response.StatusCode = statusCode
 	responseIsJSON := res.ApiResponseIsJSON
-	response.Response.ServiceStatus = true
-	response.Response.GatewayStatus = true
-	response.Response.BadRequest = true
-	if statusCode == 0 || nrest.StatusCodesAllBad(statusCode) { //if status code is 0 it means that either rubix-service is down or a rubix app
+	response.ServiceStatus = true
+	response.GatewayStatus = true
+	response.BadRequest = true
+	if statusCode == 0 || rest.StatusCodesAllBad(statusCode) { //if status code is 0 it means that either rubix-service is down or a rubix app
 		if statusCode == 0 {
-			response.Response.StatusCode = 503
-			response.Response.GatewayStatus = false
-			response.Response.ServiceStatus = false
+			response.StatusCode = 503
+			response.GatewayStatus = false
+			response.ServiceStatus = false
 		}
 		if inst.UseRubixProxy {
 			if responseIsJSON {
-				response.Response.ServiceStatus = false
-				response.Response.Message = res.AsJsonNoErr()
-				return
+				response.ServiceStatus = false
+				response.Message = res.AsJsonNoErr()
+				return response
 			} else if statusCode == 0 {
 				err = fmt.Errorf("rubix-service is offline")
-				response.Response.Message = err.Error()
-				return
+				response.Message = err.Error()
+				return response
 			}
 
 		}
-		response.Response.BodyType = TypeError
+		response.BodyType = TypeError
 		bodyError := ""
 		if err != nil {
 			bodyError = err.Error()
@@ -168,26 +176,26 @@ func (inst *NubeRest) BuildResponse(res *nrest.Reply, err error, body interface{
 
 		if failedBodyMessages(bodyError) {
 			if statusCode == 0 { //bacnet-service is offline
-				response.Response.ServiceStatus = false
-				err = fmt.Errorf("service: %s is offline", inst.Rest.Service)
-				response.Response.Message = err.Error()
+				response.ServiceStatus = false
+				err = fmt.Errorf("service: %s is offline", inst.Rest.AppService)
+				response.Message = err.Error()
 			} else { //bacnet-service is online but bad req
-				response.Response.ServiceStatus = true
-				err = fmt.Errorf("service: %s bad request", inst.Rest.Service)
-				response.Response.Message = err.Error()
+				response.ServiceStatus = true
+				err = fmt.Errorf("service: %s bad request", inst.Rest.AppService)
+				response.Message = err.Error()
 			}
-			return
+			return response
 		} else {
-			response.Response.ServiceStatus = false
+			response.ServiceStatus = false
 			if responseIsJSON {
-				response.Response.Message = res.AsJsonNoErr()
+				response.Message = res.AsJsonNoErr()
 			} else if bodyError != "" {
-				response.Response.Message = bodyError
+				response.Message = bodyError
 			} else {
-				err = fmt.Errorf("service: %s is offline or bad request", inst.Rest.Service)
-				response.Response.Message = err.Error()
+				err = fmt.Errorf("service: %s is offline or bad request", inst.Rest.AppService)
+				response.Message = err.Error()
 			}
-			return
+			return response
 		}
 	}
 	getType := types.DetectMapTypes(res.AsJsonNoErr())
@@ -196,37 +204,36 @@ func (inst *NubeRest) BuildResponse(res *nrest.Reply, err error, body interface{
 		EmptyBody: "no content",
 	}
 	if getType.IsArray {
-		response.Response.BodyType = TypeArray
-		response.Response.Body = res.AsJsonNoErr()
+		response.BodyType = TypeArray
+		response.Body = res.AsJsonNoErr()
 	} else if getType.IsMap {
-		response.Response.BodyType = TypeObject
-		response.Response.Body = res.AsJsonNoErr()
+		response.BodyType = TypeObject
+		response.Body = res.AsJsonNoErr()
 	} else if getType.IsString {
-		response.Response.BodyType = TypeString
-		response.Response.Message = res.AsJsonNoErr()
+		response.BodyType = TypeString
+		response.Message = res.AsJsonNoErr()
 	} else if res.AsString() == "" {
-		response.Response.BodyType = TypeString
-		response.Response.Message = noBody
+		response.BodyType = TypeString
+		response.Message = noBody
 	} else {
-		response.Response.BodyType = TypeString
-		response.Response.Message = noBody
+		response.BodyType = TypeString
+		response.Message = noBody
 	}
-	response.Response.BadRequest = false
+	response.BadRequest = false
 	if statusCode == 204 { //some app's return this when deleting, and it will not return our body so change to 200
-		response.Response.StatusCode = 200
+		response.StatusCode = 200
 	} else {
-		response.Response.StatusCode = statusCode
+		response.StatusCode = statusCode
 	}
-	return
+	return response
 }
 
 //FixPath will change the nube proxy and the service port ie: from bacnet 1717 to rubix-service port 1616
 func (inst *NubeRest) FixPath() *NubeRest {
 	proxyName := inst.RubixProxyPath
-	proxyBacnet := nube_apps.Services.BacnetServer.Proxy
-	proxyFF := nube_apps.Services.FlowFramework.Proxy
+	proxyBacnet := nube.Services.BacnetServer.Proxy
+	proxyFF := nube.Services.FlowFramework.Proxy
 	if inst.UseRubixProxy {
-		inst.Rest.Port = inst.RubixPort
 		if proxyName == proxyFF { //api/bacnet/points
 			inst.Rest.Path = fmt.Sprintf("/%s%s", proxyFF, inst.Rest.Path)
 		} else if proxyName == proxyBacnet {
@@ -248,21 +255,23 @@ func (inst *NubeRest) LogErr(errMsg error) {
 func (inst *NubeRest) GetToken() (proxyReturn ProxyReturn) {
 	token := inst.RubixToken
 	if token == "" || tokenTimeDiffMin(inst.RubixTokenLastUpdate, 15) {
-		options := &nrest.ReqOpt{
+		options := &rest.Options{
 			Timeout:          2 * time.Second,
 			RetryCount:       2,
 			RetryWaitTime:    2 * time.Second,
 			RetryMaxWaitTime: 0,
-			Json:             map[string]interface{}{"username": inst.RubixUsername, "password": inst.RubixPassword},
+			Body:             map[string]interface{}{"username": inst.RubixUsername, "password": inst.RubixPassword},
 		}
 
 		inst.Rest.Port = inst.RubixPort
 		inst.Rest.Path = "/api/users/login"
-		inst.Rest.Method = nrest.POST
-		response := nrest.DoHTTPReq(inst.Rest, options)
-		statusCode := response.StatusCode
+		inst.Rest.Method = rest.POST
+		inst.Rest.Options = options
+
+		response := inst.Rest.Request()
+		statusCode := response.Status()
 		res := new(TokenResponse)
-		err = response.ToInterface(&res)
+		err := response.ToInterface(&res)
 		if err != nil || statusCode != 200 || res.AccessToken == "" {
 			log.Errorln("failed to get token", response.AsString(), statusCode)
 		}

@@ -1,4 +1,4 @@
-package nube_apps
+package nube
 
 import (
 	"fmt"

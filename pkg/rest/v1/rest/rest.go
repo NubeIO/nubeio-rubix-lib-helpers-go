@@ -1,4 +1,4 @@
-package nrest
+package rest
 
 // go http client support get,post,delete,patch,put,head,file method
 // go-resty/resty: https://github.com/go-resty/resty
@@ -13,7 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -29,146 +28,89 @@ const (
 	FILE   = "FILE"
 )
 
-var defaultTimeout = 3 * time.Second
+//New client
+func New(s *Service) *Service {
+	if s == nil {
+		s = &Service{}
+	}
+	if s.Url == "" {
+		s.Url = LocalHost
+	}
+	url := fmt.Sprintf("http://%s:%d", s.Url, s.Port)
+	if s.HTTPS {
+		url = fmt.Sprintf("https://%s:%d", s.Url, s.Port)
+	}
+	if s.Method == "" {
+		s.Method = GET
+	}
+	if s.LogPath == "" {
+		s.LogPath = "nube.helpers.nrest"
+	}
+	s.Url = url
+	return s
+}
 
-var defaultMaxRetries = 100
+/*Service
+Parameters:
+	: BaseUri 0.0.0.0 or nube-io.com
+	: Proxy
+	: Port 1616
+	: HTTPS if true will set url to https
+	: Path  /api/users
+	: Method GET, POST, PATCH, PUT, DELETE, HEAD, FILE
+	: Options *Options
+Description:
 
-type ReqOpt struct {
-	Timeout time.Duration
+*/
+type Service struct {
+	Url             string //0.0.0.0 or nube-io.com\
+	Path            string //  /api/points
+	Port            int    // 80 or 443
+	HTTPS           bool
+	Method          string
+	Debug           bool
+	Proxy           string
+	AppService      string //as in bacnet-server
+	LogPath         string //in the log message show path or extra message
+	LogFunc         string
+	EnableKeepAlive bool
+	Options         *Options
+}
 
+type Options struct {
+	Timeout          time.Duration
 	RetryCount       int
 	RetryWaitTime    time.Duration
 	RetryMaxWaitTime time.Duration
-
-	Params         map[string]interface{}
-	SetQueryString string
-	Data           map[string]interface{}
-	Headers        map[string]interface{}
-
-	Cookies        map[string]interface{}
-	CookiePath     string
-	CookieDomain   string
-	CookieMaxAge   int
-	CookieHttpOnly bool
-
-	Json          interface{}
-	FileName      string
-	FileParamName string
+	Params           map[string]interface{}
+	SetQueryString   string
+	Data             map[string]interface{}
+	Headers          map[string]interface{}
+	Cookies          map[string]interface{}
+	CookiePath       string
+	CookieDomain     string
+	CookieMaxAge     int
+	CookieHttpOnly   bool
+	Body             interface{}
+	FileName         string
+	FileParamName    string
 }
 
 type Reply struct {
+	err               error
+	body              []byte
+	bodyJson          interface{}
+	statusCode        int
 	IsError           bool
-	Err               error
-	Body              []byte
-	BodyJson          interface{}
-	StatusCode        int
 	ApiResponseIsBad  bool //is true response is a 404
 	ApiResponseIsJSON bool
 	ApiResponseLength int
 }
 
-type ApiStdRes struct {
-	Code    int
-	Message string
-	Data    interface{}
-}
-
-type Service struct {
-	BaseUri         string //0.0.0.0 or nube-io.com
-	Proxy           string
-	EnableKeepAlive bool
-	ReqType         *ReqType
-	ReqOpt          *ReqOpt
-}
-
-type ReqType struct {
-	BaseUri string //0.0.0.0 or nube-io.com
-	Port    int    // 80 or 443
-	HTTPS   bool
-	Path    string //  /api/points
-	Method  string
-	Debug   bool
-	Service string //as in bacnet-server
-	LogPath string //in the log message show path or extra message
-	LogFunc string
-}
-
-func errorMsg(appName string, msg interface{}, e error) (err interface{}) {
-	if e != nil && msg != "" {
-		err = fmt.Errorf("%s: error:%w  msg:%s", appName, e, msg)
-		return
-	}
-	if e != nil {
-		err = fmt.Errorf("%s: error:%w", appName, e)
-		return
-	}
-	if msg != "" {
-		err = fmt.Errorf("%s: msg:%s", appName, msg)
-		return
-	}
-	return
-}
-
-func isJSON(str string) bool {
-	return json.Unmarshal([]byte(str), &json.RawMessage{}) == nil
-}
-
-func getJSONLen(str interface{}) (length int) {
-	length = reflect.ValueOf(str).Len()
-	return
-}
-
-// StatusCode2xx method returns true if HTTP status `code >= 200 and <= 299` otherwise false.
-func StatusCode2xx(statusCode int) bool {
-	return statusCode > 199 && statusCode < 300
-}
-
-// StatusCode3xx method returns true if HTTP status `code >= 299 and <= 399` otherwise false.
-func StatusCode3xx(statusCode int) bool {
-	return statusCode > 299 && statusCode < 399
-}
-
-// StatusCode4xx method returns true if HTTP status `code >= 399 and <= 499` otherwise false.
-func StatusCode4xx(statusCode int) bool {
-	return statusCode > 399 && statusCode < 499
-}
-
-// StatusCode5xx method returns true if HTTP status `code >= 499 and <= 599` otherwise false.
-func StatusCode5xx(statusCode int) bool {
-	return statusCode > 499 && statusCode < 599
-}
-
-// StatusCodesAllBad any status for 3xx, 4xx and 5xx
-func StatusCodesAllBad(statusCode int) (ok bool) {
-	if StatusCode3xx(statusCode) {
-		ok = true
-	}
-	if StatusCode4xx(statusCode) {
-		ok = true
-	}
-	if StatusCode5xx(statusCode) {
-		ok = true
-	}
-	return
-}
-
-func DoHTTPReq(r *ReqType, opt *ReqOpt) (response *Reply) {
-	host := fmt.Sprintf("http://%s:%d", r.BaseUri, r.Port)
-	if r.HTTPS {
-		host = fmt.Sprintf("https://%s:%d", r.BaseUri, r.Port)
-	}
-	s := &Service{
-		BaseUri: host,
-	}
-	if r.Method == "" {
-		r.Method = GET
-	}
-	if r.LogPath == "" {
-		r.LogPath = "nube.helpers.nrest"
-	}
-	response = s.Do(r.Method, r.Path, opt)
-	statusCode := response.StatusCode
-	logPath := fmt.Sprintf("%s.%s() method: %s host: %s statusCode:%d", r.LogPath, r.LogFunc, strings.ToUpper(r.Method), host+r.Path, statusCode)
+func (s *Service) Request() (response *Reply) {
+	response = s.Do()
+	statusCode := response.statusCode
+	logPath := fmt.Sprintf("%s.%s() method: %s host: %s statusCode:%d", s.LogPath, s.LogFunc, strings.ToUpper(s.Method), s.Url+s.Path, statusCode)
 	if response.ApiResponseIsBad {
 		log.Errorln(logPath)
 	} else {
@@ -189,49 +131,36 @@ func DoHTTPReq(r *ReqType, opt *ReqOpt) (response *Reply) {
 	return response
 }
 
-func (ReqOpt) ParseData(d map[string]interface{}) map[string]string {
-	dLen := len(d)
-	if dLen == 0 {
-		return nil
-	}
-	data := make(map[string]string, dLen)
-	for k, v := range d {
-		if val, ok := v.(string); ok {
-			data[k] = val
-		} else {
-			data[k] = fmt.Sprintf("%v", v)
-		}
-	}
-	return data
-}
-
 // Do request
 // method string  get,post,put,patch,delete,head
 // uri    string  BaseUri  /api/whatever
 // opt 	  *ReqOpt
-func (s *Service) Do(method string, reqUrl string, opt *ReqOpt) *Reply {
+func (s *Service) Do() *Reply {
+	reqUrl := s.Url
+	method := s.Method
+	path := s.Path
 	if method == "" {
 		return &Reply{
-			Err: errors.New("request method is empty"),
+			err: errors.New("request method is empty"),
 		}
 	}
 	if reqUrl == "" {
 		return &Reply{
-			Err: errors.New("request url is empty"),
+			err: errors.New("request url is empty"),
 		}
 	}
+	opt := s.Options
 	if opt == nil {
-		opt = &ReqOpt{}
+		opt = &Options{}
 	}
-	if s.BaseUri != "" {
-		reqUrl = strings.TrimRight(s.BaseUri, "/") + reqUrl
+	if path != "" {
+		reqUrl = strings.TrimRight(reqUrl, "/") + path
 	}
 	if opt.Timeout == 0 {
 		opt.Timeout = defaultTimeout
 	}
 	client := resty.New()
 	client = client.SetTimeout(opt.Timeout) //timeout
-
 	if !s.EnableKeepAlive {
 		client = client.SetHeader("Connection", "close")
 	}
@@ -239,7 +168,6 @@ func (s *Service) Do(method string, reqUrl string, opt *ReqOpt) *Reply {
 	if s.Proxy != "" {
 		client = client.SetProxy(s.Proxy)
 	}
-
 	if opt.RetryCount > 0 {
 		if opt.RetryCount > defaultMaxRetries {
 			opt.RetryCount = defaultMaxRetries
@@ -255,7 +183,6 @@ func (s *Service) Do(method string, reqUrl string, opt *ReqOpt) *Reply {
 			client = client.SetRetryMaxWaitTime(opt.RetryMaxWaitTime)
 		}
 	}
-
 	if cLen := len(opt.Cookies); cLen > 0 {
 		cookies := make([]*http.Cookie, cLen)
 		for k, _ := range opt.Cookies {
@@ -313,8 +240,8 @@ func (s *Service) Do(method string, reqUrl string, opt *ReqOpt) *Reply {
 		// We can say its quite handy or powerful. Supported request body data types is `string`,
 		// `[]byte`, `struct`, `map`, `slice` and `io.Reader`. Body value can be pointer or non-pointer.
 		// Automatic marshalling for JSON and XML content type, if it is `struct`, `map`, or `slice`.
-		if opt.Json != nil {
-			req = req.SetBody(opt.Json)
+		if opt.Body != nil {
+			req = req.SetBody(opt.Body)
 		}
 
 		if method == "post" {
@@ -335,7 +262,7 @@ func (s *Service) Do(method string, reqUrl string, opt *ReqOpt) *Reply {
 		b, err := ioutil.ReadFile(opt.FileName)
 		if err != nil {
 			return &Reply{
-				Err: errors.New("read file error: " + err.Error()),
+				err: errors.New("read file error: " + err.Error()),
 			}
 		}
 		resp, err := client.R().
@@ -346,7 +273,7 @@ func (s *Service) Do(method string, reqUrl string, opt *ReqOpt) *Reply {
 	}
 
 	return &Reply{
-		Err: errors.New("request method not support"),
+		err: errors.New("request method not support"),
 	}
 }
 
@@ -355,39 +282,52 @@ func NewRestyClient() *resty.Client {
 	return resty.New()
 }
 
+var reply = &Reply{}
+
 func (s *Service) GetResult(resp *resty.Response, err error) *Reply {
-	res := &Reply{}
 	if err != nil {
-		res.Err = err
-		return res
+		reply.err = err
+		return reply
 	}
-	res.Body = resp.Body()
+	reply.body = resp.Body()
 	if !resp.IsSuccess() {
-		if res.AsString() == "" {
-			res.ApiResponseIsBad = true
-			res.Err = errors.New("request failed -> " + " http StatusCode: " + strconv.Itoa(resp.StatusCode()) + " message: " + resp.Status())
-			res.StatusCode = resp.StatusCode()
-			return res
+		if reply.AsString() == "" {
+			reply.ApiResponseIsBad = true
+			reply.err = errors.New("request failed -> " + " http StatusCode: " + strconv.Itoa(resp.StatusCode()) + " message: " + resp.Status())
+			reply.statusCode = resp.StatusCode()
+			return reply
 		}
 	}
-	res.StatusCode = resp.StatusCode()
-	return res
+	reply.statusCode = resp.StatusCode()
+	return reply
+}
+
+// Log log for debugging
+func (r *Reply) Log() {
+	log.Println(reply.Status())
+	log.Println(reply.err)
+
 }
 
 // Status return http status code
 func (r *Reply) Status() int {
-	return r.StatusCode
+	return r.statusCode
+}
+
+// Status return http status code
+func (r *Reply) Error() error {
+	return r.err
 }
 
 // AsString return as body as a string
 func (r *Reply) AsString() string {
-	return string(r.Body)
+	return string(r.body)
 }
 
 // AsJson return as body as blank interface
 func (r *Reply) AsJson() (interface{}, error) {
 	var res interface{}
-	err := json.Unmarshal(r.Body, &res)
+	err := json.Unmarshal(reply.body, &res)
 	if err != nil {
 		return nil, err
 	}
@@ -397,7 +337,7 @@ func (r *Reply) AsJson() (interface{}, error) {
 // AsJsonNoErr return as body as blank interface and ignore any errors
 func (r *Reply) AsJsonNoErr() interface{} {
 	var res interface{}
-	err := json.Unmarshal(r.Body, &res)
+	err := json.Unmarshal(r.body, &res)
 	if err != nil {
 		return nil
 	}
@@ -406,8 +346,8 @@ func (r *Reply) AsJsonNoErr() interface{} {
 
 // ToInterface return as body as a json
 func (r *Reply) ToInterface(data interface{}) error {
-	if len(r.Body) > 0 {
-		err := json.Unmarshal(r.Body, data)
+	if len(r.body) > 0 {
+		err := json.Unmarshal(r.body, data)
 		if err != nil {
 			return err
 		}
@@ -417,8 +357,8 @@ func (r *Reply) ToInterface(data interface{}) error {
 
 // ToInterfaceNoErr return as body as a json
 func (r *Reply) ToInterfaceNoErr(data interface{}) {
-	if len(r.Body) > 0 {
-		json.Unmarshal(r.Body, data)
+	if len(r.body) > 0 {
+		json.Unmarshal(r.body, data)
 	}
 
 }

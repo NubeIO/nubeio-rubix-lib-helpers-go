@@ -1,8 +1,8 @@
-package nube_systemd
+package nsystemd
 
 import (
 	"context"
-	systemctl2 "github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/systemd/systemctl"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/systemd/systemctl"
 
 	"time"
 )
@@ -25,9 +25,9 @@ func (service *SystemD) IsActive() (result *Result) {
 	result = &Result{}
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(service.Timeout)*time.Second)
 	defer cancel()
-	opts := systemctl2.Options{UserMode: false}
+	opts := systemctl.Options{UserMode: false}
 	unit := service.ServiceName
-	result.active, result.err = systemctl2.IsActive(ctx, unit, opts)
+	result.active, result.err = systemctl.IsActive(ctx, unit, opts)
 	return result
 
 }

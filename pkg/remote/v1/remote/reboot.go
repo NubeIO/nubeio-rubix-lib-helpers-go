@@ -1,4 +1,4 @@
-package admin
+package remote
 
 import (
 	log "github.com/sirupsen/logrus"

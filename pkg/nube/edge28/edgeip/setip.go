@@ -1,4 +1,4 @@
-package edge28
+package edgeip
 
 import (
 	"errors"
