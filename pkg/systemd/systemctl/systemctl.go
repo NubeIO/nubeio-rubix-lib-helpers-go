@@ -2,11 +2,10 @@ package systemctl
 
 import (
 	"context"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/systemd/systemctl/properties"
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/taigrr/systemctl/properties"
 )
 
 // DaemonReload Reload systemd manager configuration.

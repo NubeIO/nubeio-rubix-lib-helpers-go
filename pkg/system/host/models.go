@@ -2,7 +2,7 @@ package host
 
 import (
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/arr"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/remote_admin/admin"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/remote/v1/remote"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/times/utilstime"
 )
 
@@ -20,7 +20,7 @@ type CmdArgs struct {
 type Combination struct {
 	ServerInfo   string          `json:"server_info"`
 	SystemTime   *utilstime.Time `json:"system_time"`
-	Uptime       admin.Details   `json:"uptime"`
+	Uptime       remote.Details  `json:"uptime"`
 	MemInfo      *arr.Array      `json:"mem_info"`
 	KernelInfo   KernelInfo      `json:"kernel_info"`
 	ProgressInfo ProgressInfo    `json:"progress_info"`
