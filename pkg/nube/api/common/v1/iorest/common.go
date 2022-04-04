@@ -76,7 +76,7 @@ type RestResponse struct {
 }
 
 // New returns a new instance of the nube common apis
-func New(nubeRest *NubeRest) *NubeRest {
+func New(nubeRest *NubeRest, rest *rest.Service) *NubeRest {
 	if nubeRest.UseRubixProxy {
 		if nubeRest.RubixPort == 0 {
 			nubeRest.RubixPort = nube.Services.RubixService.Port
@@ -86,6 +86,7 @@ func New(nubeRest *NubeRest) *NubeRest {
 			//return nil
 		}
 	}
+	nubeRest.Rest = rest
 	return nubeRest
 }
 

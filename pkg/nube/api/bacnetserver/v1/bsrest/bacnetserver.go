@@ -9,8 +9,6 @@ import (
 )
 
 type BacnetClient struct {
-	Url    string
-	Port   int
 	IoRest *iorest.NubeRest
 }
 
@@ -26,16 +24,6 @@ var Paths = struct {
 
 // New returns a new instance of the nube common apis
 func New(bc *BacnetClient) *BacnetClient {
-
-	if bc.IoRest.UseRubixProxy {
-		bc.Port = nube.Services.RubixService.Port
-	}
-	if bc.Port == 0 {
-		bc.Port = nube.Services.BacnetServer.Port
-	}
-	client := rest.New(&rest.Service{Url: bc.Url, Port: bc.Port})
-	bc.IoRest.RubixProxyPath = nube.Services.BacnetServer.Proxy
-	bc.IoRest.Rest = client
 	return bc
 }
 
@@ -64,7 +52,7 @@ func (inst *BacnetClient) Ping() (ping ServerPing, response *iorest.RestResponse
 
 // GetPoints  get all
 func (inst *BacnetClient) GetPoints() (points []BacnetPoint, response *iorest.RestResponse) {
-	path := fmt.Sprintf("/%s/points", Paths.Points.Path)
+	path := fmt.Sprintf("%s/points", Paths.Points.Path)
 	inst.IoRest.Rest = inst.builder(rest.GET, inst.GetPoints, path)
 	res := inst.IoRest.Rest.Request()
 	response = inst.IoRest.BuildResponse(res, &points)
@@ -74,26 +62,29 @@ func (inst *BacnetClient) GetPoints() (points []BacnetPoint, response *iorest.Re
 //
 // GetPoint get one by its uuid
 func (inst *BacnetClient) GetPoint(uuid string) (points BacnetPoint, response *iorest.RestResponse) {
-	path := fmt.Sprintf("/%s/uuid/%s", Paths.Points.Path, uuid)
+	path := fmt.Sprintf("%s/uuid/%s", Paths.Points.Path, uuid)
 	inst.IoRest.Rest = inst.builder(rest.GET, inst.GetPoint, path)
 	res := inst.IoRest.Rest.Request()
+	fmt.Println(8888, inst.IoRest.Rest.Path)
+	fmt.Println(8888, inst.IoRest.Rest.Url)
 	response = inst.IoRest.BuildResponse(res, &points)
 	return
 }
 
 // AddPoint add one object
-func (inst *BacnetClient) AddPoint(body BacnetPoint) (points BacnetPoint, response *iorest.RestResponse) {
+func (inst *BacnetClient) AddPoint(body *BacnetPoint) (points BacnetPoint, response *iorest.RestResponse) {
 	path := Paths.Points.Path
 	inst.IoRest.Rest = inst.builder(rest.POST, inst.AddPoint, path)
 	inst.IoRest.Rest.Options.Body = body
 	res := inst.IoRest.Rest.Request()
 	response = inst.IoRest.BuildResponse(res, &points)
+	fmt.Println(res.AsString())
 	return
 }
 
 // UpdatePoint update one object
 func (inst *BacnetClient) UpdatePoint(uuid string, body BacnetPoint) (points BacnetPoint, response *iorest.RestResponse) {
-	path := fmt.Sprintf("/%s/uuid/%s", Paths.Points.Path, uuid)
+	path := fmt.Sprintf("%s/uuid/%s", Paths.Points.Path, uuid)
 	inst.IoRest.Rest = inst.builder(rest.PATCH, inst.UpdatePoint, path)
 	inst.IoRest.Rest.Options.Body = body
 	res := inst.IoRest.Rest.Request()
@@ -103,7 +94,7 @@ func (inst *BacnetClient) UpdatePoint(uuid string, body BacnetPoint) (points Bac
 
 // UpdatePointValue do a point write
 func (inst *BacnetClient) UpdatePointValue(uuid string, body BacnetPoint) (points BacnetPoint, response *iorest.RestResponse) {
-	path := fmt.Sprintf("/%s/uuid/%s", Paths.Points.Path, uuid)
+	path := fmt.Sprintf("%s/uuid/%s", Paths.Points.Path, uuid)
 	inst.IoRest.Rest = inst.builder(rest.PATCH, inst.UpdatePointValue, path)
 	inst.IoRest.Rest.Options.Body = body
 	res := inst.IoRest.Rest.Request()
@@ -113,7 +104,7 @@ func (inst *BacnetClient) UpdatePointValue(uuid string, body BacnetPoint) (point
 
 // DeletePoint delete one by its uuid
 func (inst *BacnetClient) DeletePoint(uuid string) (response *iorest.RestResponse, notFound bool, deletedOk bool) {
-	path := fmt.Sprintf("/%s/uuid/%s", Paths.Points.Path, uuid)
+	path := fmt.Sprintf("%s/uuid/%s", Paths.Points.Path, uuid)
 	inst.IoRest.Rest = inst.builder(rest.DELETE, inst.DeletePoint, path)
 	res := inst.IoRest.Rest.Request()
 	response = inst.IoRest.BuildResponse(res, nil)
@@ -121,6 +112,8 @@ func (inst *BacnetClient) DeletePoint(uuid string) (response *iorest.RestRespons
 		notFound = true
 	} else if res.Status() == 204 {
 		deletedOk = true
+	} else if res.Status() == 404 {
+		notFound = true
 	}
 	return
 }

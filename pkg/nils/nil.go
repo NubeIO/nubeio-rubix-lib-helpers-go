@@ -1,5 +1,12 @@
 package nils
 
+import (
+	"fmt"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/uuid"
+	"math/rand"
+	"time"
+)
+
 func NewString(value string) *string {
 	return &value
 }
@@ -11,7 +18,13 @@ func StringIsNil(b *string) string {
 		return *b
 	}
 }
-
+func StringNilCheck(b *string) bool {
+	if b == nil {
+		return true
+	} else {
+		return false
+	}
+}
 func Float64IsNil(b *float64) float64 {
 	if b == nil {
 		return 0
@@ -98,4 +111,27 @@ func FloatIsNilCheck(b *float64) bool {
 	} else {
 		return false
 	}
+}
+
+//RandomString will make a random string that can be used for naming as an example a unique name
+func RandomString() string {
+	u, _ := uuid.MakeUUID()
+	return fmt.Sprintf("n_%s", truncateString(u, 8))
+
+}
+
+func RandomInt(min, max int) int {
+	rand.Seed(time.Now().Unix())
+	return rand.Intn(max-min) + min
+}
+
+func truncateString(str string, num int) string {
+	ret := str
+	if len(str) > num {
+		if num > 3 {
+			num -= 3
+		}
+		ret = str[0:num] + ""
+	}
+	return ret
 }
