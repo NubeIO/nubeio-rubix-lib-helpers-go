@@ -75,6 +75,18 @@ type Service struct {
 	LogFunc         string
 	EnableKeepAlive bool
 	Options         *Options
+	NubeProxy       *NubeProxy //optional used for nube-io proxy within rubix-service
+}
+
+type NubeProxy struct {
+	UseRubixProxy        bool   //if true then use rubix-service proxy
+	RubixProxyPath       string //the proxy path is what is used in rubix-service to append the url path ps, lora, bacnet
+	RubixPort            int
+	RubixToken           string
+	RubixTokenLastUpdate time.Time
+	RubixUsername        string
+	RubixPassword        string
+	Error                error
 }
 
 type Options struct {
@@ -129,6 +141,23 @@ func (s *Service) Request() (response *Reply) {
 		}
 	}
 	return response
+}
+
+func (s *Service) SetPath(path string) *Service {
+	s.Path = path
+	return s
+}
+
+func (s *Service) SetBody(body interface{}) *Service {
+	if s.Options != nil {
+		s.Options.Body = body
+	}
+	return s
+}
+
+func (s *Service) SetMethod(method string) *Service {
+	s.Method = method
+	return s
 }
 
 // Do request
@@ -303,31 +332,31 @@ func (s *Service) GetResult(resp *resty.Response, err error) *Reply {
 }
 
 // Log log for debugging
-func (r *Reply) Log() {
+func (res *Reply) Log() {
 	log.Println(reply.Status())
 	log.Println(reply.err)
 
 }
 
 // Status return http status code
-func (r *Reply) Status() int {
-	return r.statusCode
+func (res *Reply) Status() int {
+	return res.statusCode
 }
 
 // Status return http status code
-func (r *Reply) Error() error {
-	return r.err
+func (res *Reply) Error() error {
+	return res.err
 }
 
 // AsString return as body as a string
-func (r *Reply) AsString() string {
-	return string(r.body)
+func (res *Reply) AsString() string {
+	return string(res.body)
 }
 
 // AsJson return as body as blank interface
-func (r *Reply) AsJson() (interface{}, error) {
-	var res interface{}
-	err := json.Unmarshal(reply.body, &res)
+func (res *Reply) AsJson() (interface{}, error) {
+	var out interface{}
+	err := json.Unmarshal(reply.body, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -335,9 +364,9 @@ func (r *Reply) AsJson() (interface{}, error) {
 }
 
 // AsJsonNoErr return as body as blank interface and ignore any errors
-func (r *Reply) AsJsonNoErr() interface{} {
-	var res interface{}
-	err := json.Unmarshal(r.body, &res)
+func (res *Reply) AsJsonNoErr() interface{} {
+	var out interface{}
+	err := json.Unmarshal(res.body, &out)
 	if err != nil {
 		return nil
 	}
@@ -345,9 +374,9 @@ func (r *Reply) AsJsonNoErr() interface{} {
 }
 
 // ToInterface return as body as a json
-func (r *Reply) ToInterface(data interface{}) error {
-	if len(r.body) > 0 {
-		err := json.Unmarshal(r.body, data)
+func (res *Reply) ToInterface(data interface{}) error {
+	if len(res.body) > 0 {
+		err := json.Unmarshal(res.body, data)
 		if err != nil {
 			return err
 		}
@@ -356,9 +385,12 @@ func (r *Reply) ToInterface(data interface{}) error {
 }
 
 // ToInterfaceNoErr return as body as a json
-func (r *Reply) ToInterfaceNoErr(data interface{}) {
-	if len(r.body) > 0 {
-		json.Unmarshal(r.body, data)
+func (res *Reply) ToInterfaceNoErr(data interface{}) {
+	if len(res.body) > 0 {
+		err := json.Unmarshal(res.body, data)
+		if err != nil {
+			log.Errorln("nube.helpers.rest.ToInterfaceNoErr() error:", err)
+		}
 	}
 
 }

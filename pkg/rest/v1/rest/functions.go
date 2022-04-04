@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"runtime"
+	"strings"
 	"time"
 )
 
-var defaultTimeout = 3 * time.Second
+var defaultTimeout = 5 * time.Second
 
 var defaultMaxRetries = 100
 
@@ -88,4 +90,17 @@ func (Options) ParseData(d map[string]interface{}) map[string]string {
 		}
 	}
 	return data
+}
+
+func tokenTimeDiffMin(t time.Time, timeDiff float64) (out bool) {
+	t1 := time.Now()
+	if t1.Sub(t).Minutes() > timeDiff {
+		out = true
+	}
+	return
+}
+
+func GetFunctionName(temp interface{}) string {
+	s := strings.Split(runtime.FuncForPC(reflect.ValueOf(temp).Pointer()).Name(), ".")
+	return s[len(s)-1]
 }

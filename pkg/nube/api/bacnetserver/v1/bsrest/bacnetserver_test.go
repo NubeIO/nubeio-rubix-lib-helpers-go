@@ -3,7 +3,6 @@ package bsrest
 import (
 	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nils"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube/api/common/v1/iorest"
 	pprint "github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/print"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/rest/v1/rest"
 	"testing"
@@ -14,16 +13,17 @@ func TestBACnetRest(*testing.T) {
 
 	restService := &rest.Service{}
 	restService.Port = 1717
-	options := &rest.Options{}
-	restService.Options = options
+	restOptions := &rest.Options{}
+	restService.Options = restOptions
 	restService = rest.New(restService)
 
-	commonClient := &iorest.NubeRest{}
-	commonClient.UseRubixProxy = false
-	commonClient.RubixUsername = "admin"
-	commonClient.RubixPassword = "N00BWires"
-	commonClient = iorest.New(commonClient, restService)
-	bacnetClient := New(&BacnetClient{IoRest: commonClient})
+	nubeProxy := &rest.NubeProxy{}
+	nubeProxy.UseRubixProxy = false
+	nubeProxy.RubixUsername = "admin"
+	nubeProxy.RubixPassword = "N00BWires"
+	restService.NubeProxy = nubeProxy
+
+	bacnetClient := New(&BacnetClient{Rest: restService})
 
 	ping, res := bacnetClient.Ping()
 
