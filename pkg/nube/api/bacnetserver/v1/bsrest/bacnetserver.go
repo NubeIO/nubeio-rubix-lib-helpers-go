@@ -65,8 +65,6 @@ func (inst *BacnetClient) GetPoint(uuid string) (points BacnetPoint, response *i
 	path := fmt.Sprintf("%s/uuid/%s", Paths.Points.Path, uuid)
 	inst.IoRest.Rest = inst.builder(rest.GET, inst.GetPoint, path)
 	res := inst.IoRest.Rest.Request()
-	fmt.Println(8888, inst.IoRest.Rest.Path)
-	fmt.Println(8888, inst.IoRest.Rest.Url)
 	response = inst.IoRest.BuildResponse(res, &points)
 	return
 }
@@ -78,7 +76,6 @@ func (inst *BacnetClient) AddPoint(body *BacnetPoint) (points BacnetPoint, respo
 	inst.IoRest.Rest.Options.Body = body
 	res := inst.IoRest.Rest.Request()
 	response = inst.IoRest.BuildResponse(res, &points)
-	fmt.Println(res.AsString())
 	return
 }
 
