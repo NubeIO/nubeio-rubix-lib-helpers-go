@@ -2,7 +2,7 @@ package portscanner
 
 import (
 	"fmt"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/networking/ip_helpers"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/networking/iphelpers"
 
 	log "github.com/sirupsen/logrus"
 	"net"
@@ -33,7 +33,7 @@ type Hosts struct {
 
 // IPScanner scans all IP addresses in ipList for every port in portList.
 func IPScanner(ips []string, portStr []string, printResults bool) (hostsFound Hosts) {
-	var ipList []ip_helpers.IPv4
+	var ipList []iphelpers.IPv4
 	var portList []string
 	var wg sync.WaitGroup
 
@@ -43,14 +43,14 @@ func IPScanner(ips []string, portStr []string, printResults bool) (hostsFound Ho
 		portList = portStr
 	}
 	if len(ips) == 0 {
-		ipList = append(ipList, ip_helpers.IPv4{127, 0, 0, 1})
+		ipList = append(ipList, iphelpers.IPv4{127, 0, 0, 1})
 	} else {
 		for _, i := range ips {
 			if strings.Contains(i, "-") {
-				ipList = append(ipList, ip_helpers.ParseIPSequence(i)...)
+				ipList = append(ipList, iphelpers.ParseIPSequence(i)...)
 				fmt.Println(ipList)
 			} else {
-				ip := ip_helpers.ToIPv4(i)
+				ip := iphelpers.ToIPv4(i)
 				if ip.IsValid() {
 					ipList = append(ipList, ip)
 				}
@@ -59,7 +59,7 @@ func IPScanner(ips []string, portStr []string, printResults bool) (hostsFound Ho
 	}
 	for _, ip := range ipList {
 		wg.Add(1)
-		go func(ip ip_helpers.IPv4) {
+		go func(ip iphelpers.IPv4) {
 			defer wg.Done()
 			ports := PortScanner(ip, portList)
 			if len(ports) > 0 {
@@ -110,7 +110,7 @@ func ParsePortList(rawPorts string) []string {
 }
 
 // PortScanner scans IP:port pairs looking for open ports on IP addresses.
-func PortScanner(ip ip_helpers.IPv4, portList []string) []string {
+func PortScanner(ip iphelpers.IPv4, portList []string) []string {
 	var open []string
 	for _, port := range portList {
 		conn, err := net.DialTimeout("tcp",
@@ -125,7 +125,7 @@ func PortScanner(ip ip_helpers.IPv4, portList []string) []string {
 }
 
 // PresentResults presents all results in console.
-func PresentResults(ip ip_helpers.IPv4, ports []string) int {
+func PresentResults(ip iphelpers.IPv4, ports []string) int {
 	log.Println(" \n>" + ip.ToString())
 	log.Println(" Port:	Description:")
 	for _, port := range ports {

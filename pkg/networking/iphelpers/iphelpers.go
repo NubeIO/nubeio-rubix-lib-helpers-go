@@ -1,4 +1,4 @@
-package ip_helpers
+package iphelpers
 
 import (
 	"fmt"
