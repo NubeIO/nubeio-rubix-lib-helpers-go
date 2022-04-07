@@ -55,17 +55,15 @@ func PingPorts() {
 	ips := ip_helpers.GetIpList(ipsSequence)
 
 	for _, ip := range ips {
-		fmt.Println(ip.ToString())
-		go func() {
-			msg, err, ok := PingPort(ip.ToString(), "22", 1, false)
-			if err != nil {
-				fmt.Println(msg, err)
-			}
-			if ok {
-				fmt.Println(msg, ok)
-			}
+		//fmt.Println(ip.ToString())
 
-		}()
+		msg, err, ok := PingPort(ip.ToString(), "22", 1, false)
+		if err != nil {
+			//fmt.Println(msg, err)
+		}
+		if ok {
+			fmt.Println(msg, ok)
+		}
 
 	}
 

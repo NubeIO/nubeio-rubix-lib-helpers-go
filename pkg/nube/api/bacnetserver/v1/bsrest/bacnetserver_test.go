@@ -3,9 +3,9 @@ package bsrest
 import (
 	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nils"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nube/api/common/v1/iorest"
 	pprint "github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/print"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/rest/v1/rest"
+	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
 	"testing"
 )
 
@@ -14,28 +14,43 @@ func TestBACnetRest(*testing.T) {
 
 	restService := &rest.Service{}
 	restService.Port = 1717
-	options := &rest.Options{}
-	restService.Options = options
+	restOptions := &rest.Options{}
+	restService.Options = restOptions
 	restService = rest.New(restService)
 
-	commonClient := &iorest.NubeRest{}
-	commonClient.UseRubixProxy = false
-	commonClient.RubixUsername = "admin"
-	commonClient.RubixPassword = "N00BWires"
-	commonClient = iorest.New(commonClient, restService)
-	bacnetClient := New(&BacnetClient{IoRest: commonClient})
+	nubeProxy := &rest.NubeProxy{}
+	nubeProxy.UseRubixProxy = false
+	nubeProxy.RubixUsername = "admin"
+	nubeProxy.RubixPassword = "N00BWires"
+	restService.NubeProxy = nubeProxy
 
-	ping, res := bacnetClient.Ping()
+	bacnetClient := New(&BacnetClient{Rest: restService})
+
+	ping, resp := bacnetClient.Ping()
+	fmt.Println(ping)
+	if resp.GetError() != nil || ping == nil {
+		fmt.Println(resp.GetError())
+		fmt.Println(resp.GetStatusCode())
+		return
+	}
 
 	fmt.Println(ping.UpHour)
-	pprint.PrintStrut(res)
+	pprint.PrintStrut(resp)
+
+	point := &model.Point{}
+
+	//var addr *int
+	value := 0
+	point.AddressID = &value
+
+	fmt.Println(nils.IntIsNil(point.AddressID))
 
 	bacnetPoint := &BacnetPoint{}
 	bacnetPoint.Description = nils.RandomString()
 	bacnetPoint.ObjectName = nils.RandomString()
 	bacnetPoint.Enable = true
-	bacnetPoint.UseNextAvailableAddr = true
-	//bacnetPoint.Address = nils.RandomInt(0, 20000)
+	bacnetPoint.UseNextAvailableAddr = false
+	bacnetPoint.Address = nils.IntIsNil(point.AddressID)
 	bacnetPoint.ObjectType = "analogOutput"
 	bacnetPoint.COV = 0
 	bacnetPoint.EventState = "normal"
@@ -43,6 +58,7 @@ func TestBACnetRest(*testing.T) {
 
 	addpoint, r := bacnetClient.AddPoint(bacnetPoint)
 	fmt.Println(addpoint)
-	fmt.Println(r.StatusCode)
+	pprint.PrintStrut(r.GetResponse())
+	fmt.Println(r.Response.Message)
 
 }
