@@ -12,10 +12,7 @@ func FindFreePort(port int) (int, error) {
 	outPort := port
 	for {
 		p := fmt.Sprintf("%d", tryUsePort)
-		_, err, foundPort := linixpingport.PingPort("0.0.0.0", p, 1, false)
-		if err != nil {
-			return port, err
-		}
+		_, _, foundPort := linixpingport.PingPort("0.0.0.0", p, 1, false)
 		if !foundPort {
 			log.Infoln("nubeio.helpers-FindFreePort() PORT TO USE", p)
 			outPort = tryUsePort

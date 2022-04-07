@@ -2,7 +2,7 @@ package linixpingport
 
 import (
 	"fmt"
-	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/networking/ip_helpers"
+	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/networking/iphelpers"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/system/command"
 	"strings"
 )
@@ -52,7 +52,7 @@ func PingPort(network, port string, timeout int, isUDP bool) (message string, er
 
 func PingPorts() {
 	ipsSequence := []string{"192.168.15.1-224"}
-	ips := ip_helpers.GetIpList(ipsSequence)
+	ips := iphelpers.GetIpList(ipsSequence)
 
 	for _, ip := range ips {
 		//fmt.Println(ip.ToString())
