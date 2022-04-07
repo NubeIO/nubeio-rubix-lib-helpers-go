@@ -21,9 +21,9 @@ type Path struct {
 }
 
 var Paths = struct {
-	Points Path
+	Login Path
 }{
-	Points: Path{Path: "/api/bacnet/points"},
+	Login: Path{Path: "/api/internal/login"},
 }
 
 var limit = 10
@@ -48,32 +48,33 @@ func (inst *ChirpClient) builder(method string, logFunc interface{}, path string
 
 }
 
-type Token struct {
+type TokenResponse struct {
 	JWT string `json:"jwt"`
 }
 
-type TokenBody struct {
+type Token struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
 // GetToken get cs token
-func (inst *ChirpClient) GetToken() (data *Token, response *rest.RestResponse) {
+func (inst *ChirpClient) GetToken(token *Token) (data *TokenResponse, response *rest.ProxyResponse) {
 	req := inst.Rest.
 		SetMethod(rest.POST).
-		SetPath("/api/internal/login").
-		SetBody(TokenBody{Email: "admin", Password: "N00BWAN"}).
-		Request()
+		SetPath(Paths.Login.Path).
+		SetBody(token).
+		DoRequest()
 	response = inst.Rest.BuildResponse(req, data)
+	response.GetResponse()
 	return
 }
 
 // GetDevices get all
-func (inst *ChirpClient) GetDevices(token string) (data *Devices, response *rest.RestResponse) {
+func (inst *ChirpClient) GetDevices(token string) (data *Devices, response *rest.ProxyResponse) {
 	path := fmt.Sprintf("/api/devices?limit=%d&organizationID=%d", limit, orgID)
 	inst.Rest = inst.builder(rest.GET, inst.GetDevices, path)
 	inst.Rest.Options.Headers = map[string]interface{}{"Grpc-Metadata-Authorization": token}
-	res := inst.Rest.Request()
+	res := inst.Rest.DoRequest()
 	response = inst.Rest.BuildResponse(res, &data)
 	return
 }

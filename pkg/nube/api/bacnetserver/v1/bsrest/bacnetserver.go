@@ -41,68 +41,76 @@ func (inst *BacnetClient) builder(method string, logFunc interface{}, path strin
 }
 
 // Ping Ping server
-func (inst *BacnetClient) Ping() (ping ServerPing, response *rest.RestResponse) {
-	path := nube.Services.BacnetServer.PingPath
-	inst.Rest = inst.builder(rest.GET, inst.Ping, path)
-	res := inst.Rest.Request()
-	response = inst.Rest.BuildResponse(res, &ping)
+func (inst *BacnetClient) Ping() (data *ServerPing, response *rest.ProxyResponse) {
+	req := inst.Rest.
+		SetMethod(rest.GET).
+		SetPath(nube.Services.BacnetServer.PingPath).
+		DoRequest()
+	response = inst.Rest.BuildResponse(req, &data)
+	response.GetResponse()
+
 	return
 }
 
 // GetPoints  get all
-func (inst *BacnetClient) GetPoints() (points []BacnetPoint, response *rest.RestResponse) {
+func (inst *BacnetClient) GetPoints() (points []*BacnetPoint, response *rest.ProxyResponse) {
 	path := fmt.Sprintf("%s/points", Paths.Points.Path)
 	inst.Rest = inst.builder(rest.GET, inst.GetPoints, path)
-	res := inst.Rest.Request()
+	res := inst.Rest.DoRequest()
 	response = inst.Rest.BuildResponse(res, &points)
 	return
 }
 
 //
 // GetPoint get one by its uuid
-func (inst *BacnetClient) GetPoint(uuid string) (points BacnetPoint, response *rest.RestResponse) {
+func (inst *BacnetClient) GetPoint(uuid string) (points *BacnetPoint, response *rest.ProxyResponse) {
 	path := fmt.Sprintf("%s/uuid/%s", Paths.Points.Path, uuid)
 	inst.Rest = inst.builder(rest.GET, inst.GetPoint, path)
-	res := inst.Rest.Request()
+	res := inst.Rest.DoRequest()
 	response = inst.Rest.BuildResponse(res, &points)
 	return
 }
 
 // AddPoint add one object
-func (inst *BacnetClient) AddPoint(body *BacnetPoint) (points BacnetPoint, response *rest.RestResponse) {
+func (inst *BacnetClient) AddPoint(body *BacnetPoint) (points *BacnetPoint, response *rest.ProxyResponse) {
 	path := Paths.Points.Path
 	inst.Rest = inst.builder(rest.POST, inst.AddPoint, path)
 	inst.Rest.Options.Body = body
-	res := inst.Rest.Request()
+	res := inst.Rest.DoRequest()
 	response = inst.Rest.BuildResponse(res, &points)
 	return
 }
 
 // UpdatePoint update one object
-func (inst *BacnetClient) UpdatePoint(uuid string, body BacnetPoint) (points BacnetPoint, response *rest.RestResponse) {
+func (inst *BacnetClient) UpdatePoint(uuid string, body *BacnetPoint) (points *BacnetPoint, response *rest.ProxyResponse) {
 	path := fmt.Sprintf("%s/uuid/%s", Paths.Points.Path, uuid)
 	inst.Rest = inst.builder(rest.PATCH, inst.UpdatePoint, path)
 	inst.Rest.Options.Body = body
-	res := inst.Rest.Request()
+	res := inst.Rest.DoRequest()
 	response = inst.Rest.BuildResponse(res, &points)
 	return
 }
 
 // UpdatePointValue do a point write
-func (inst *BacnetClient) UpdatePointValue(uuid string, body BacnetPoint) (points BacnetPoint, response *rest.RestResponse) {
+func (inst *BacnetClient) UpdatePointValue(uuid string, body *BacnetPoint) (points *BacnetPoint, response *rest.ProxyResponse) {
 	path := fmt.Sprintf("%s/uuid/%s", Paths.Points.Path, uuid)
 	inst.Rest = inst.builder(rest.PATCH, inst.UpdatePointValue, path)
 	inst.Rest.Options.Body = body
-	res := inst.Rest.Request()
+	res := inst.Rest.DoRequest()
 	response = inst.Rest.BuildResponse(res, &points)
 	return
 }
 
 // DeletePoint delete one by its uuid
-func (inst *BacnetClient) DeletePoint(uuid string) (response *rest.RestResponse, notFound bool, deletedOk bool) {
+func (inst *BacnetClient) DeletePoint(uuid string) (response *rest.ProxyResponse, notFound bool, deletedOk bool) {
+
+	if uuid == "" {
+
+	}
+
 	path := fmt.Sprintf("%s/uuid/%s", Paths.Points.Path, uuid)
 	inst.Rest = inst.builder(rest.DELETE, inst.DeletePoint, path)
-	res := inst.Rest.Request()
+	res := inst.Rest.DoRequest()
 	response = inst.Rest.BuildResponse(res, nil)
 	if strings.Contains(res.AsString(), "uuid") {
 		notFound = true
@@ -116,7 +124,7 @@ func (inst *BacnetClient) DeletePoint(uuid string) (response *rest.RestResponse,
 
 //
 // DropPoints delete all objects
-func (inst *BacnetClient) DropPoints() (response *rest.RestResponse) {
+func (inst *BacnetClient) DropPoints() (response *rest.ProxyResponse) {
 	inst.Rest.LogFunc = rest.GetFunctionName(inst.DropPoints)
 	points, response := inst.GetPoints()
 	statusCode := response.GetStatusCode()
@@ -126,9 +134,9 @@ func (inst *BacnetClient) DropPoints() (response *rest.RestResponse) {
 			count++
 			inst.DeletePoint(pnt.UUID)
 		}
-		response.BodyType = rest.TypeString
-		response.Body = ""
-		response.Message = fmt.Sprintf("points delete %d", count)
+		response.Response.BodyType = rest.TypeString
+		response.Response.Body = ""
+		response.Response.Message = fmt.Sprintf("points delete %d", count)
 	}
 
 	return

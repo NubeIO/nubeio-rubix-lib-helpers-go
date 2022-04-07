@@ -37,6 +37,27 @@ func NewInt(value int) *int {
 	return &value
 }
 
+func NewBool(value bool) *bool {
+	return &value
+}
+
+func BoolIsNil(value *bool) bool {
+	if value == nil {
+		return false
+	}
+	return *value
+}
+
+func NewTrue() *bool {
+	b := true
+	return &b
+}
+
+func NewFalse() *bool {
+	b := false
+	return &b
+}
+
 func NewUint16(value uint16) *uint16 {
 	return &value
 }
@@ -54,6 +75,14 @@ func IntIsNil(b *int) int {
 		return 0
 	} else {
 		return *b
+	}
+}
+
+func BoolNilCheck(b *bool) bool {
+	if b == nil {
+		return true
+	} else {
+		return false
 	}
 }
 

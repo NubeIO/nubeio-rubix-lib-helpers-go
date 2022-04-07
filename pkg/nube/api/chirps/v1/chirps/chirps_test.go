@@ -23,8 +23,8 @@ func TestChirpsPing(*testing.T) {
 
 	client := New(&ChirpClient{Rest: restService})
 
-	token, res := client.GetToken()
-	fmt.Println("token", res.StatusCode)
+	token, res := client.GetToken(&Token{Email: "admin", Password: "N00BWAN"})
+	fmt.Println("token", res.GetStatusCode())
 	fmt.Println("token", token)
 
 	//devices, res := client.GetDevices(token.JWT)

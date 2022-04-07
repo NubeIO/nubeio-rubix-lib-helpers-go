@@ -5,6 +5,7 @@ import (
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/nils"
 	pprint "github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/print"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/rest/v1/rest"
+	"github.com/NubeIO/nubeio-rubix-lib-models-go/pkg/v1/model"
 	"testing"
 )
 
@@ -25,17 +26,31 @@ func TestBACnetRest(*testing.T) {
 
 	bacnetClient := New(&BacnetClient{Rest: restService})
 
-	ping, res := bacnetClient.Ping()
+	ping, resp := bacnetClient.Ping()
+	fmt.Println(ping)
+	if resp.GetError() != nil || ping == nil {
+		fmt.Println(resp.GetError())
+		fmt.Println(resp.GetStatusCode())
+		return
+	}
 
 	fmt.Println(ping.UpHour)
-	pprint.PrintStrut(res)
+	pprint.PrintStrut(resp)
+
+	point := &model.Point{}
+
+	//var addr *int
+	value := 0
+	point.AddressID = &value
+
+	fmt.Println(nils.IntIsNil(point.AddressID))
 
 	bacnetPoint := &BacnetPoint{}
 	bacnetPoint.Description = nils.RandomString()
 	bacnetPoint.ObjectName = nils.RandomString()
 	bacnetPoint.Enable = true
-	bacnetPoint.UseNextAvailableAddr = true
-	//bacnetPoint.Address = nils.RandomInt(0, 20000)
+	bacnetPoint.UseNextAvailableAddr = false
+	bacnetPoint.Address = nils.IntIsNil(point.AddressID)
 	bacnetPoint.ObjectType = "analogOutput"
 	bacnetPoint.COV = 0
 	bacnetPoint.EventState = "normal"
@@ -43,6 +58,7 @@ func TestBACnetRest(*testing.T) {
 
 	addpoint, r := bacnetClient.AddPoint(bacnetPoint)
 	fmt.Println(addpoint)
-	fmt.Println(r.StatusCode)
+	pprint.PrintStrut(r.GetResponse())
+	fmt.Println(r.Response.Message)
 
 }

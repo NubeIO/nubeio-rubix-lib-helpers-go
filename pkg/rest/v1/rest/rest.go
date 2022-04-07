@@ -119,8 +119,8 @@ type Reply struct {
 	ApiResponseLength int
 }
 
-func (s *Service) Request() (response *Reply) {
-	response = s.Do()
+func (s *Service) DoRequest() (response *Reply) {
+	response = s.do()
 	statusCode := response.statusCode
 	logPath := fmt.Sprintf("%s.%s() method: %s host: %s statusCode:%d", s.LogPath, s.LogFunc, strings.ToUpper(s.Method), s.Url+s.Path, statusCode)
 	if response.ApiResponseIsBad {
@@ -143,28 +143,11 @@ func (s *Service) Request() (response *Reply) {
 	return response
 }
 
-func (s *Service) SetPath(path string) *Service {
-	s.Path = path
-	return s
-}
-
-func (s *Service) SetBody(body interface{}) *Service {
-	if s.Options != nil {
-		s.Options.Body = body
-	}
-	return s
-}
-
-func (s *Service) SetMethod(method string) *Service {
-	s.Method = method
-	return s
-}
-
 // Do request
 // method string  get,post,put,patch,delete,head
 // uri    string  BaseUri  /api/whatever
 // opt 	  *ReqOpt
-func (s *Service) Do() *Reply {
+func (s *Service) do() *Reply {
 	reqUrl := s.Url
 	method := s.Method
 	path := s.Path
