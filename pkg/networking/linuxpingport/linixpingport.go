@@ -1,4 +1,4 @@
-package linux_ping_port
+package linixpingport
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ type LinuxPingResponse struct {
 	Error    error
 }
 
-func PingPort(network, port string, timeout int, isUDP bool) (message string, err error, ok bool) {
+func PingPort(network, port string, timeout int, isUDP bool) (message string, err error, foundPort bool) {
 	_timeout := fmt.Sprintf("-w %d", timeout)
 	cmd := []string{
 		"nc",
@@ -44,9 +44,9 @@ func PingPort(network, port string, timeout int, isUDP bool) (message string, er
 	}
 	out, err := command.Run(cmd...)
 	if strings.Contains(out, "succeeded!") {
-		ok = true
+		foundPort = true
 	}
-	return out, err, ok
+	return out, err, foundPort
 
 }
 
