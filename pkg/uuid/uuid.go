@@ -19,3 +19,14 @@ func MakeUUID() (string, error) {
 
 }
 
+
+func SmallUUID() (uuid string) {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		fmt.Println("Error: ", err)
+		return
+	}
+	uuid = fmt.Sprintf("id_%X%X", b[0:4], b[4:6])
+	return
+}
