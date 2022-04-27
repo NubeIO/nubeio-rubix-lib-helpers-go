@@ -1,7 +1,6 @@
 package systemctl
 
 import (
-	"context"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/systemd/systemctl/properties"
 	"strconv"
 	"time"
@@ -10,8 +9,8 @@ import (
 const dateFormat = "Mon 2006-01-02 15:04:05 MST"
 
 // GetStartTime Get start time of a service (`systemctl show [unit] --property ExecMainStartTimestamp`) as a `Time` type
-func GetStartTime(ctx context.Context, unit string, opts Options) (time.Time, error) {
-	value, err := Show(ctx, unit, properties.ExecMainStartTimestamp, opts)
+func GetStartTime(unit string, opts Options) (time.Time, error) {
+	value, err := Show(unit, properties.ExecMainStartTimestamp, opts)
 
 	if err != nil {
 		return time.Time{}, err
@@ -24,8 +23,8 @@ func GetStartTime(ctx context.Context, unit string, opts Options) (time.Time, er
 }
 
 // GetNumRestarts Get the number of times a process restarted (`systemctl show [unit] --property NRestarts`) as an int
-func GetNumRestarts(ctx context.Context, unit string, opts Options) (int, error) {
-	value, err := Show(ctx, unit, properties.NRestarts, opts)
+func GetNumRestarts(unit string, opts Options) (int, error) {
+	value, err := Show(unit, properties.NRestarts, opts)
 	if err != nil {
 		return -1, err
 	}
@@ -33,8 +32,8 @@ func GetNumRestarts(ctx context.Context, unit string, opts Options) (int, error)
 }
 
 // GetMemoryUsage Get current memory in bytes (`systemctl show [unit] --property MemoryCurrent`) an an int
-func GetMemoryUsage(ctx context.Context, unit string, opts Options) (int, error) {
-	value, err := Show(ctx, unit, properties.MemoryCurrent, opts)
+func GetMemoryUsage(unit string, opts Options) (int, error) {
+	value, err := Show(unit, properties.MemoryCurrent, opts)
 	if err != nil {
 		return -1, err
 	}
@@ -45,8 +44,8 @@ func GetMemoryUsage(ctx context.Context, unit string, opts Options) (int, error)
 }
 
 // GetPID Get the PID of the main process (`systemctl show [unit] --property MainPID`) as an int
-func GetPID(ctx context.Context, unit string, opts Options) (int, error) {
-	value, err := Show(ctx, unit, properties.MainPID, opts)
+func GetPID(unit string, opts Options) (int, error) {
+	value, err := Show(unit, properties.MainPID, opts)
 	if err != nil {
 		return -1, err
 	}
