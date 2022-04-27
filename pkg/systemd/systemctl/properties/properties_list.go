@@ -1,14 +1,10 @@
 package properties
 
-import (
-	systemctl2 "github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/systemd/systemctl"
-)
-
 var Properties = []Property{
 	ActiveEnterTimestamp,
 	ActiveEnterTimestampMonotonic,
 	ActiveExitTimestampMonotonic,
-	systemctl2.ActiveState,
+	ActiveState,
 	After,
 	AllowIsolate,
 	AssertResult,
@@ -185,7 +181,7 @@ var Properties = []Property{
 	RemainAfterExit,
 	RemoveIPC,
 	Requires,
-	systemctl2.Restart,
+	Restart,
 	RestartKillSignal,
 	RestartUSec,
 	RestrictNamespaces,
@@ -216,7 +212,7 @@ var Properties = []Property{
 	StateDirectoryMode,
 	StatusErrno,
 	StopWhenUnneeded,
-	systemctl2.SubState,
+	SubState,
 	SuccessAction,
 	SyslogFacility,
 	SyslogLevel,
@@ -241,7 +237,7 @@ var Properties = []Property{
 	UID,
 	UMask,
 	UnitFilePreset,
-	systemctl2.UnitFileState,
+	UnitFileState,
 	UtmpMode,
 	WantedBy,
 	WatchdogSignal,

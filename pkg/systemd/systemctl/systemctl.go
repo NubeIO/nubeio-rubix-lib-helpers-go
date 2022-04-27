@@ -2,6 +2,7 @@ package systemctl
 
 import (
 	"context"
+	"errors"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/systemd/systemctl/properties"
 	"regexp"
 	"strings"
@@ -14,7 +15,7 @@ import (
 // files, and recreate the entire dependency tree. While the daemon is being
 // reloaded, all sockets systemd listens on behalf of user configuration will
 // stay accessible.
-func DaemonReload(ctx context.Context, opts Options) error {
+func DaemonReload(opts Options) error {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"daemon-reload", "--system"}
@@ -30,7 +31,7 @@ func DaemonReload(ctx context.Context, opts Options) error {
 // This removes all symlinks to the unit files backing the specified units from
 // the unit configuration directory, and hence undoes any changes made by
 // enable or link.
-func Disable(ctx context.Context, unit string, opts Options) error {
+func Disable(unit string, opts Options) error {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"disable", "--system", unit}
@@ -47,7 +48,7 @@ func Disable(ctx context.Context, unit string, opts Options) error {
 // the indicated unit files. After the symlinks have been created, the system
 // manager configuration is reloaded (in a way equivalent to daemon-reload),
 // in order to ensure the changes are taken into account immediately.
-func Enable(ctx context.Context, unit string, opts Options) error {
+func Enable(unit string, opts Options) error {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"enable", "--system", unit}
@@ -62,14 +63,14 @@ func Enable(ctx context.Context, unit string, opts Options) error {
 //
 // Returns true if the unit is active, false if inactive or failed.
 // Also returns false in an error case.
-func IsActive(ctx context.Context, unit string, opts Options) (bool, error) {
+func IsActive(unit string, opts Options) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"is-active", "--system", unit}
 	if opts.UserMode {
 		args[1] = "--user"
 	}
-	stdout, _, _, err := execute(ctx, args)
+	stdout, _, _, _ := execute(ctx, args)
 	stdout = strings.TrimSuffix(stdout, "\n")
 	switch stdout {
 	case "inactive":
@@ -81,7 +82,7 @@ func IsActive(ctx context.Context, unit string, opts Options) (bool, error) {
 	case "activating":
 		return false, nil
 	default:
-		return false, err
+		return false, errors.New("failed or service is not installed")
 	}
 }
 
@@ -94,7 +95,7 @@ func IsActive(ctx context.Context, unit string, opts Options) (bool, error) {
 //
 // See https://www.freedesktop.org/software/systemd/man/systemctl.html#is-enabled%20UNIT%E2%80%A6
 // for more information
-func IsEnabled(ctx context.Context, unit string, opts Options) (bool, error) {
+func IsEnabled(unit string, opts Options) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"is-enabled", "--system", unit}
@@ -136,7 +137,7 @@ func IsEnabled(ctx context.Context, unit string, opts Options) (bool, error) {
 }
 
 // IsFailed Check whether any of the specified units are in a "failed" state.
-func IsFailed(ctx context.Context, unit string, opts Options) (bool, error) {
+func IsFailed(unit string, opts Options) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"is-failed", "--system", unit}
@@ -160,7 +161,7 @@ func IsFailed(ctx context.Context, unit string, opts Options) (bool, error) {
 // Notably, Mask may return ErrDoesNotExist if a unit doesn't exist, but it will
 // continue masking anyway. Calling Mask on a non-existing masked unit does not
 // return an error. Similarly, see Unmask.
-func Mask(ctx context.Context, unit string, opts Options) error {
+func Mask(unit string, opts Options) error {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"mask", "--system", unit}
@@ -173,7 +174,7 @@ func Mask(ctx context.Context, unit string, opts Options) error {
 
 // Restart Stop and then start one or more units specified on the command line.
 // If the units are not running yet, they will be started.
-func Restart(ctx context.Context, unit string, opts Options) error {
+func Restart(unit string, opts Options) error {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"restart", "--system", unit}
@@ -186,7 +187,7 @@ func Restart(ctx context.Context, unit string, opts Options) error {
 
 // Show a selected property of a unit. Accepted properties are predefined in the
 // properties' subpackage to guarantee properties are valid and assist code-completion.
-func Show(ctx context.Context, unit string, property properties.Property, opts Options) (string, error) {
+func Show(unit string, property properties.Property, opts Options) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"show", "--system", unit, "--property", string(property)}
@@ -200,7 +201,7 @@ func Show(ctx context.Context, unit string, property properties.Property, opts O
 }
 
 // Start (activate) a given unit
-func Start(ctx context.Context, unit string, opts Options) error {
+func Start(unit string, opts Options) error {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"start", "--system", unit}
@@ -216,7 +217,7 @@ func Start(ctx context.Context, unit string, opts Options) error {
 //
 // Generally, it makes more sense to programmatically retrieve the properties
 // using Show, but this command is provided for the sake of completeness
-func Status(ctx context.Context, unit string, opts Options) (string, error) {
+func Status(unit string, opts Options) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"status", "--system", unit}
@@ -227,8 +228,24 @@ func Status(ctx context.Context, unit string, opts Options) (string, error) {
 	return stdout, err
 }
 
+//IsInstalled checks if the program is installed
+func IsInstalled(unit string, opts Options) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
+	defer cancel()
+	var args = []string{"status", "--system", unit}
+	if opts.UserMode {
+		args[1] = "--user"
+	}
+	_, _, _, err := execute(ctx, args)
+
+	if err != nil {
+		return false, errors.New("service is not installed")
+	}
+	return true, nil
+}
+
 // Stop (deactivate) a given unit
-func Stop(ctx context.Context, unit string, opts Options) error {
+func Stop(unit string, opts Options) error {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"stop", "--system", unit}
@@ -246,7 +263,7 @@ func Stop(ctx context.Context, unit string, opts Options) error {
 // doesn't exist, but only if it's not already masked.
 // If the unit doesn't exist, but it's masked anyway, no error will be
 // returned. Gross, I know. Take it up with Pottering.
-func Unmask(ctx context.Context, unit string, opts Options) error {
+func Unmask(unit string, opts Options) error {
 	ctx, cancel := context.WithTimeout(context.Background(), setTimeout(opts.Timeout)*time.Second)
 	defer cancel()
 	var args = []string{"unmask", "--system", unit}
