@@ -1,7 +1,6 @@
 package portscanner
 
 import (
-	"fmt"
 	"github.com/NubeIO/nubeio-rubix-lib-helpers-go/pkg/networking/iphelpers"
 
 	log "github.com/sirupsen/logrus"
@@ -32,11 +31,11 @@ type Hosts struct {
 }
 
 // IPScanner scans all IP addresses in ipList for every port in portList.
-func IPScanner(ips []string, portStr []string, printResults bool) (hostsFound Hosts) {
+func IPScanner(ips []string, portStr []string, printResults bool) (hostsFound *Hosts) {
 	var ipList []iphelpers.IPv4
 	var portList []string
 	var wg sync.WaitGroup
-
+	hostsFound = &Hosts{}
 	if len(portStr) == 1 {
 		portList = ParsePortList(portStr[0])
 	} else {
@@ -48,7 +47,6 @@ func IPScanner(ips []string, portStr []string, printResults bool) (hostsFound Ho
 		for _, i := range ips {
 			if strings.Contains(i, "-") {
 				ipList = append(ipList, iphelpers.ParseIPSequence(i)...)
-				fmt.Println(ipList)
 			} else {
 				ip := iphelpers.ToIPv4(i)
 				if ip.IsValid() {
@@ -126,10 +124,8 @@ func PortScanner(ip iphelpers.IPv4, portList []string) []string {
 
 // PresentResults presents all results in console.
 func PresentResults(ip iphelpers.IPv4, ports []string) int {
-	log.Println(" \n>" + ip.ToString())
-	log.Println(" Port:	Description:")
 	for _, port := range ports {
-		log.Println(" " + port + "\t" + portShortList[port])
+		log.Println("IP:", ip.ToString(), " PORT:"+port+"\t"+"Description: "+portShortList[port])
 	}
 	return 0
 }

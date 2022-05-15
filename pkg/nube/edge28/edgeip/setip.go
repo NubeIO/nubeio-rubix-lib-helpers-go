@@ -37,16 +37,16 @@ func SetIP(net EdgeNetworking) (ok bool, err error) {
 	//const setIpDHCP = `sudo connmanctl config ${iface} --ipv4 dhcp`;
 
 	if !net.SetDHCP {
-		_, err = validation.IsIPAddr(net.IPAddress)
-		if err != nil {
+		ok = validation.IsIPAddr(net.IPAddress)
+		if !ok {
 			return false, errors.New(fmt.Sprintf(" %s couldn't be parsed as an IPAddress", net.IPAddress))
 		}
-		_, err = validation.IsIPAddr(net.SubnetMask)
-		if err != nil {
+		ok = validation.IsIPAddr(net.SubnetMask)
+		if !ok {
 			return false, errors.New(fmt.Sprintf(" %s couldn't be parsed as an SubnetMask", net.SubnetMask))
 		}
-		_, err = validation.IsIPAddr(net.Gateway)
-		if err != nil {
+		ok = validation.IsIPAddr(net.Gateway)
+		if !ok {
 			return false, errors.New(fmt.Sprintf(" %s couldn't be parsed as an Gateway", net.Gateway))
 		}
 	}
