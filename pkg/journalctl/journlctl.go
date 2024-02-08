@@ -54,7 +54,7 @@ type JournalCTL interface {
 	// EntriesAfter returns entries after the specified cursor position. The
 	// newest Entry22 is returned first. If the cursor parameter is empty the
 	// last 100 entries are returned.
-	EntriesAfter(unit string, cursor string, last string) ([]Entry, error)
+	EntriesAfter(unit string, cursor string, last string, args ...string) ([]Entry, error)
 }
 
 // NewJournalCTL returns a dummy journalctl
@@ -79,7 +79,7 @@ func (j *journal) LastEntry(unit string) (*Entry, error) {
 // EntriesAfter calls journalctl -r -u <unit> -n 1000 -o json [--after-cursor <cursor>]
 // and parses the output. The --after-cursor parameter is added if the cursor is set.
 // The newest element is the last returned.
-func (j *journal) EntriesAfter(unit string, cursor string, last string) ([]Entry, error) {
+func (j *journal) EntriesAfter(unit string, cursor string, last string, args ...string) ([]Entry, error) {
 	opts := []string{"-u", unit, "-o", "json", "-n", "1000"}
 	if cursor != "" {
 		opts = append(opts, "--cursor", cursor)
@@ -87,6 +87,7 @@ func (j *journal) EntriesAfter(unit string, cursor string, last string) ([]Entry
 	if last != "" {
 		opts = append(opts, "-n", last)
 	}
+	opts = append(opts, args...)
 	buf, err := exec.Command("journalctl", opts...).Output()
 	if err != nil {
 		return nil, err
